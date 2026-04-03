@@ -13,7 +13,7 @@ export interface FilterOptions {
 export function applyBaseFilters(tasks: Task[]): Task[] {
   return tasks.filter((task) => {
     if (!task.created) return false;
-    if (task.status === "Cancelled") return false;
+    if (task.status === "Cancelled" || task.status === "Canceled") return false;
     if (task.tags.includes("useless")) return false;
     return true;
   });

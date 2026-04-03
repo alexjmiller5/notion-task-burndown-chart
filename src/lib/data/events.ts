@@ -37,12 +37,19 @@ export function buildEventsMap(tasks: Task[]): Map<string, TaskEvent> {
   }
 
   for (const task of tasks) {
+    const startDate = getEffectiveStartDate(task);
+    const completedDate = task.completed ? toDateStr(task.completed) : null;
+
+    // Skip tasks that were completed before their effective start date —
+    // they were finished before they'd ever enter the active count
+    if (completedDate && addOneDay(completedDate) <= startDate) continue;
+
     // Task enters the count on its effective start date (due date or created date)
-    addEvent(getEffectiveStartDate(task), "created", task);
+    addEvent(startDate, "created", task);
 
     // Task leaves the count when completed
-    if (task.completed) {
-      addEvent(addOneDay(toDateStr(task.completed)), "completed", task);
+    if (completedDate) {
+      addEvent(addOneDay(completedDate), "completed", task);
     }
 
     // State changes for tag/due date history
