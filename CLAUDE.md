@@ -9,10 +9,9 @@ Stacked Task Chart is a SvelteKit web application that visualizes Notion task da
 ## Running the App
 
 ```bash
-deno task dev
+deno task dev    # SvelteKit dev server on port 5173
+deno task test   # Run unit tests (also: just test)
 ```
-
-Starts the SvelteKit dev server (Vite) on port 5173. No separate backend needed — SvelteKit handles both frontend and API routes.
 
 Requirements: Deno 2.x, 1Password CLI (`op`) for local secrets retrieval.
 
@@ -23,46 +22,61 @@ Requirements: Deno 2.x, 1Password CLI (`op`) for local secrets retrieval.
 - **SvelteKit** (Svelte 5 with runes) for full-stack framework
 - **Chart.js** for chart rendering (loaded client-side via dynamic import)
 - **Tailwind CSS v4** via `@tailwindcss/vite` plugin
-- **dayjs** for date manipulation
+- **dayjs** for date manipulation in `src/lib/data/filters.ts` and `src/lib/data/history.ts`. All other date math is in `src/lib/data/timezone.ts` using `Intl.DateTimeFormat` for IANA timezone conversion (no dayjs plugins needed).
 
 ### Server Modules (`src/lib/server/`)
 - `secrets.ts` — Retrieves Notion API key via 1Password CLI (`op item get "Stacked Task Chart Notion Internal Integration Secret" --fields credential --reveal`). Falls back to `NOTION_API_KEY` env var.
-- `cache.ts` — Reads/writes `notion-cache.json` using Deno file APIs
-- `notion.ts` — Notion API client with full and incremental fetch modes, plus page merging
+- `cache.ts` — Reads/writes `notion-cache.json` using Deno file APIs. Cache shape: `{ lastFullRefreshAt: string | null, pages: NotionPage[] }`. Legacy cache files (raw array) are auto-migrated on read.
+- `notion.ts` — Notion API client with full and incremental fetch modes, `mergePages` (id-keyed), `getIncrementalSinceDate`.
+- `refresh-policy.ts` — Pure decision: when to do a full vs incremental refresh. Triggers full when forced, when cache is empty, when no prior full has happened, or when the last full was ≥ 24 hours ago.
 
 ### Data Processing (`src/lib/data/`)
 Pure TypeScript modules shared between server and client:
 - `parser.ts` — Parses Notion pages into Task objects, applies base filters (cancelled, useless)
 - `history.ts` — Parses "Tag & Date History" ledger field (format: `[YYYY-MM-DD HH:MM] --- Tags: [...], Due Date: ...`)
 - `filters.ts` — Base filters (server-side) and view filters (client-side: legacy, incomplete)
-- `events.ts` — Builds events Map keyed by date with created/completed/stateChange arrays
-- `calculator.ts` — Day-by-day running count calculation, O(days x tasks)
+- `timezone.ts` — `toLocalDateStr`, `addDays` (DST-safe via UTC arithmetic), `getCurrentDateStr`, plus the curated `TIMEZONES` list and `DEFAULT_TIMEZONE` (`America/New_York`).
+- `presets.ts` — `getPresetRange(label, tz)` for the date-range preset buttons (7D/30D/90D/1Y/MTD/YTD/ALL).
+- `events.ts` — Builds events Map keyed by date with created/completed/stateChange arrays. Takes a `tz` parameter so `created_time` (UTC ISO) buckets to the user's selected timezone.
+- `calculator.ts` — Day-by-day running count calculation, O(days x tasks). Uses `addDays` from `timezone.ts` (DST-safe).
 
 ### Server Routes (`src/routes/`)
 - `+page.server.ts` — Load function reads cache, parses tasks, returns immediately
-- `api/refresh/+server.ts` — POST endpoint: incremental Notion fetch, merge with cache, return parsed tasks
+- `api/refresh/+server.ts` — POST endpoint. Calls `shouldFullRefresh` to choose full vs incremental, fetches accordingly, writes cache (updating `lastFullRefreshAt` only on full), returns parsed tasks plus refresh metadata.
 
 ### Data Flow
 1. Page load → server reads `notion-cache.json` → parses tasks → returns to client
 2. Client renders chart immediately from cached data
-3. `onMount` fires background POST to `/api/refresh`
-4. Refresh endpoint computes `min(max_created, max_last_edited)` from cache → fetches only changed tasks from Notion → merges → writes cache → returns
-5. Client updates chart reactively via Svelte 5 `$derived` pipeline
+3. `onMount` fires background POST to `/api/refresh` (incremental unless cache is stale ≥ 24h)
+4. Refresh endpoint decides full vs incremental; on full, replaces cache wholesale and updates `lastFullRefreshAt`; on incremental, computes `min(max_created, max_last_edited)`, fetches changed pages, merges by id
+5. User can manually click "Full Sync" → calls `/api/refresh?full=1` → forces a full refresh (used to catch deletions, since trashed pages silently disappear from Notion's data source query)
+6. Client updates chart reactively via Svelte 5 `$derived` pipeline
 
 ### Components (`src/components/`)
 - `TaskChart.svelte` — Chart.js stacked area chart (client-only via dynamic import)
-- `GroupBySwitcher.svelte` — Tag / Due Date toggle
-- `DateRangeControl.svelte` — Date range inputs + month shift buttons + keyboard shortcuts
-- `MultiSelectDropdown.svelte` — Reusable checkbox dropdown for tags and status filters
-- `OptionToggles.svelte` — Include Incomplete and Legacy View checkboxes
+- `RangeSlider.svelte` — Dual-handle date range slider
+
+UI controls (range presets, group-by selector, timezone dropdown, Full Sync button, toggle switches) are inlined in `src/routes/+page.svelte` rather than extracted into components.
 
 ## Key Concepts
 
 **Incremental fetching**: Instead of fetching all 3600+ pages, the refresh uses the earlier of `max(created_time)` and `max(last_edited_time)` across cached pages as a threshold, then queries Notion with `last_edited_time >= threshold`. Fresh pages are merged by ID.
 
+**Deletions are invisible to incremental fetch**: Notion's data source query API (version `2026-03-11`) silently excludes trashed/archived pages and provides no way to query for them (no `in_trash` filter, no top-level `archived` param). The only way to detect a deletion is a full refresh that replaces the cache wholesale. The auto-full-after-24h policy and the manual "Full Sync" button exist for this reason.
+
+**Timezone awareness**: The user picks a timezone from a curated list (default `America/New_York`). It is *not* persisted across reloads. The selected timezone affects: `created_time` → date bucketing, range presets ("today" anchor), the slider's right edge, and `totalActive`. It does *not* affect Notion `dueDate`/`completed` (already date-only strings) or history ledger dates (date-only strings written in the user's local TZ at edit time).
+
+**DST safety**: `addDays` in `timezone.ts` uses `Date.UTC` + `setUTCDate` so calendar-day arithmetic never lands on the wrong day across DST transitions, regardless of host TZ.
+
 **History ledger**: Tasks have a "Tag & Date History" rich text field that records tag/due date changes over time. This enables historical accuracy — the chart shows what tags a task had on any given past date.
 
 **View filters**: Base filters (cancelled, useless) apply server-side. Toggle filters (legacy cutoff 2025-01-10, incomplete tasks) apply client-side for instant response.
+
+## Testing
+
+Tests live next to the modules they cover (`*.test.ts`) and run via `deno test -A --unstable-sloppy-imports` (the `--unstable-sloppy-imports` flag lets Deno resolve the codebase's `.js` import suffixes against `.ts` files, matching SvelteKit's convention). The test runner is Deno's native one with `@std/assert`.
+
+Coverage focuses on pure TS modules in `src/lib/data/` and `src/lib/server/` — the places where actual logic lives. Svelte component tests are intentionally not wired up.
 
 ## Code Conventions
 
@@ -70,3 +84,4 @@ Pure TypeScript modules shared between server and client:
 - Deno APIs for file I/O in server modules (`Deno.readTextFile`, `Deno.Command`)
 - Pure functions in `src/lib/data/` — no side effects, no DOM, no Deno APIs
 - Tailwind CSS utility classes for styling
+- Heroicons (inline SVG, sourced from `/Users/alexmiller/desktop/coding/reference-repos/heroicons`) for all icons; never emojis
