@@ -3,6 +3,7 @@ import {
   addDays,
   DEFAULT_TIMEZONE,
   getCurrentDateStr,
+  getStartOfDayUTC,
   TIMEZONES,
   toLocalDateStr,
 } from "./timezone.ts";
@@ -127,4 +128,46 @@ Deno.test("TIMEZONES — curated list contains expected entries", () => {
 
 Deno.test("DEFAULT_TIMEZONE is America/New_York", () => {
   assertEquals(DEFAULT_TIMEZONE, "America/New_York");
+});
+
+Deno.test("getStartOfDayUTC — NY in May (EDT, UTC-4) → 04:00Z", () => {
+  // Any moment on May 5 NY → start of day = midnight EDT = 04:00 UTC
+  const noonUTC = new Date("2026-05-05T12:00:00.000Z");
+  assertEquals(
+    getStartOfDayUTC("America/New_York", noonUTC),
+    "2026-05-05T04:00:00.000Z",
+  );
+});
+
+Deno.test("getStartOfDayUTC — NY in January (EST, UTC-5) → 05:00Z", () => {
+  const noonUTC = new Date("2026-01-15T12:00:00.000Z");
+  assertEquals(
+    getStartOfDayUTC("America/New_York", noonUTC),
+    "2026-01-15T05:00:00.000Z",
+  );
+});
+
+Deno.test("getStartOfDayUTC — LA in May (PDT, UTC-7) → 07:00Z", () => {
+  const noonUTC = new Date("2026-05-05T18:00:00.000Z");
+  assertEquals(
+    getStartOfDayUTC("America/Los_Angeles", noonUTC),
+    "2026-05-05T07:00:00.000Z",
+  );
+});
+
+Deno.test("getStartOfDayUTC — UTC tz → midnight Z", () => {
+  const noonUTC = new Date("2026-05-05T12:00:00.000Z");
+  assertEquals(
+    getStartOfDayUTC("UTC", noonUTC),
+    "2026-05-05T00:00:00.000Z",
+  );
+});
+
+Deno.test("getStartOfDayUTC — early UTC = previous day in NY", () => {
+  // 03:00 UTC May 5 = 23:00 EDT May 4 → start of NY day = May 4 midnight EDT = 04:00 UTC May 4
+  const earlyUTC = new Date("2026-05-05T03:00:00.000Z");
+  assertEquals(
+    getStartOfDayUTC("America/New_York", earlyUTC),
+    "2026-05-04T04:00:00.000Z",
+  );
 });
