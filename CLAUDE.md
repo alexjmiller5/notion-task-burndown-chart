@@ -72,6 +72,22 @@ UI controls (range presets, group-by selector, timezone dropdown, Full Sync butt
 
 **View filters**: Base filters (cancelled, useless) apply server-side. Toggle filters (legacy cutoff 2025-01-10, incomplete tasks) apply client-side for instant response.
 
+## Deployment
+
+Production deployment target is a Raspberry Pi running Ubuntu, on the user's tailnet, exposed only to the tailnet via `tailscale serve` (not funnel — that would be public).
+
+- `deploy/burndown.service.template` — systemd unit, rendered with values from `.deploy.env` at deploy time.
+- `deploy/setup.sh` — one-time Pi-side bootstrap (installs Deno via `curl | sh`, configures `tailscale serve`).
+- `.deploy.env` (gitignored, copy from `.deploy.env.example`) — Pi hostname, user, port, `ORIGIN` URL.
+- `justfile` — deploy targets:
+  - `just deploy-bootstrap` — first time only: scp the unit + setup script, install Deno, configure tailscale serve, then deploy.
+  - `just deploy` — build locally with `adapter-node`, rsync `build/` to the Pi, `systemctl restart burndown`.
+  - `just deploy-logs` / `just deploy-status` / `just deploy-stop` / `just deploy-uninstall` — operational helpers.
+
+Build is intentionally local (Pi is slow). `notion-cache.json` lives in the deploy directory on the Pi (set as `WorkingDirectory` in the unit) and is preserved across deploys.
+
+Secrets on the Pi still come from the `op` CLI invoked at runtime by `secrets.ts` — same code path as local dev. The systemd service runs as the user that's signed into 1Password CLI on the Pi.
+
 ## Testing
 
 Tests live next to the modules they cover (`*.test.ts`) and run via `deno test -A --unstable-sloppy-imports` (the `--unstable-sloppy-imports` flag lets Deno resolve the codebase's `.js` import suffixes against `.ts` files, matching SvelteKit's convention). The test runner is Deno's native one with `@std/assert`.
