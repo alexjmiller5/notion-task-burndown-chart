@@ -14,13 +14,16 @@ test:
 test-watch:
   deno test -A --unstable-sloppy-imports --watch
 
-# First-time deploy: install Deno on the Pi, install systemd unit, configure
-# tailscale serve, then run `just deploy` to ship the build.
+# First-time deploy: install Deno on the Pi, push secret, install systemd
+# unit, configure tailscale serve, then run `just deploy` to ship the build.
+# Idempotent — safe to re-run after editing the unit template or rotating
+# the secret.
 deploy-bootstrap:
   @test -f .deploy.env || (echo "Missing .deploy.env — copy from .deploy.env.example" && exit 1)
   ssh "$PI_USER@$PI_HOST" "mkdir -p $PI_DIR"
   scp deploy/setup.sh "$PI_USER@$PI_HOST:/tmp/burndown-setup.sh"
   ssh "$PI_USER@$PI_HOST" "bash /tmp/burndown-setup.sh '$PI_DIR' '$SERVE_PORT' '$APP_PORT'"
+  just deploy-set-secret
   sed -e "s|__USER__|$PI_USER|g" \
       -e "s|__DIR__|$PI_DIR|g" \
       -e "s|__PORT__|$APP_PORT|g" \
@@ -32,6 +35,17 @@ deploy-bootstrap:
   just deploy
   @echo ""
   @echo "✓ Bootstrap complete. App should be reachable at: $ORIGIN"
+
+# Read the Notion API key from local 1Password and push it to the Pi as
+# /etc/burndown.env (mode 600, root-owned). Restarts the service if it's
+# already running. Run after rotating the secret.
+deploy-set-secret:
+  @test -f .deploy.env || (echo "Missing .deploy.env — copy from .deploy.env.example" && exit 1)
+  @KEY="$(op read "$SECRET_PATH")" && \
+    printf 'NOTION_API_KEY=%s\n' "$KEY" | \
+    ssh "$PI_USER@$PI_HOST" "sudo tee /etc/burndown.env > /dev/null && sudo chmod 600 /etc/burndown.env" >/dev/null
+  ssh "$PI_USER@$PI_HOST" "sudo systemctl try-restart burndown.service" || true
+  @echo "✓ Secret installed at /etc/burndown.env on Pi (mode 600)."
 
 # Routine redeploy: build locally, rsync output to Pi, restart the service.
 deploy:
