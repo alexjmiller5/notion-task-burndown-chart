@@ -15,7 +15,7 @@ fi
 mkdir -p "$DEPLOY_DIR"
 
 echo "==> Configuring tailscale serve on https=$SERVE_PORT → http://localhost:$APP_PORT"
-sudo tailscale serve --bg --https="$SERVE_PORT" "http://localhost:$APP_PORT"
+sudo tailscale serve --bg --yes --https="$SERVE_PORT" "http://localhost:$APP_PORT"
 
 echo "==> Current tailscale serve status:"
 sudo tailscale serve status || true
