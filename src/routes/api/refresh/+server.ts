@@ -13,10 +13,13 @@ import { parseTasks } from "$lib/data/parser.js";
 
 export const POST: RequestHandler = async ({ url }) => {
   const forceFull = url.searchParams.get("full") === "1";
+  const sinceParam = url.searchParams.get("since");
   const apiKey = await getNotionApiKey();
   const cache = await readCache();
 
-  const doFull = shouldFullRefresh({
+  // Honor explicit ?since= unless full is forced or cache is empty (need to bootstrap)
+  const skipFullCheck = !forceFull && sinceParam !== null && cache.pages.length > 0;
+  const doFull = !skipFullCheck && shouldFullRefresh({
     forceFull,
     hasCache: cache.pages.length > 0,
     lastFullRefreshAt: cache.lastFullRefreshAt,
@@ -30,7 +33,7 @@ export const POST: RequestHandler = async ({ url }) => {
     lastFullRefreshAt = new Date().toISOString();
     console.log(`Full refresh: ${allPages.length} pages`);
   } else {
-    const since = getIncrementalSinceDate(cache.pages)!;
+    const since = sinceParam ?? getIncrementalSinceDate(cache.pages)!;
     const fresh = await fetchIncrementalPages(apiKey, since);
     allPages = mergePages(cache.pages, fresh);
     console.log(`Incremental: ${fresh.length} fresh pages since ${since}`);

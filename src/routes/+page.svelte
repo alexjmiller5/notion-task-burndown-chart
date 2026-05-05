@@ -8,6 +8,7 @@
     DEFAULT_TIMEZONE,
     TIMEZONES,
     getCurrentDateStr,
+    getStartOfDayUTC,
   } from "$lib/data/timezone.js";
   import { getPresetRange, PRESET_LABELS, type PresetLabel } from "$lib/data/presets.js";
   import TaskChart from "../components/TaskChart.svelte";
@@ -54,6 +55,7 @@
   });
 
   let isFullSyncing: boolean = $state(false);
+  let isRefreshingToday: boolean = $state(false);
 
   let isRefreshing: boolean = $state(false);
   let refreshError: string | null = $state(null);
@@ -153,11 +155,10 @@
     }
   });
 
-  async function fullSync() {
-    isFullSyncing = true;
+  async function postRefresh(url: string) {
     refreshError = null;
     try {
-      const res = await fetch("/api/refresh?full=1", { method: "POST" });
+      const res = await fetch(url, { method: "POST" });
       if (res.ok) {
         const fresh = await res.json();
         allTasks = fresh.tasks;
@@ -170,8 +171,22 @@
       }
     } catch (e) {
       refreshError = (e as Error).message;
+    }
+  }
+
+  async function fullSync() {
+    isFullSyncing = true;
+    try { await postRefresh("/api/refresh?full=1"); }
+    finally { isFullSyncing = false; }
+  }
+
+  async function refreshToday() {
+    isRefreshingToday = true;
+    try {
+      const since = encodeURIComponent(getStartOfDayUTC(timezone));
+      await postRefresh(`/api/refresh?since=${since}`);
     } finally {
-      isFullSyncing = false;
+      isRefreshingToday = false;
     }
   }
 
@@ -328,10 +343,33 @@
           </select>
         </label>
 
+        <!-- Refresh Today button -->
+        <button
+          onclick={refreshToday}
+          disabled={isRefreshingToday || isFullSyncing || isRefreshing}
+          class="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 hover:border-[#F7931A]/40 hover:bg-[#F7931A]/5 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Fetch tasks edited today only (in selected timezone)"
+        >
+          <svg
+            class="w-4 h-4 text-[#94A3B8] {isRefreshingToday ? 'animate-spin' : ''}"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+          </svg>
+          <span class="text-xs font-[var(--font-mono)] uppercase tracking-wider text-[#94A3B8]">
+            {isRefreshingToday ? "Syncing" : "Refresh Today"}
+          </span>
+        </button>
+
         <!-- Full Sync button -->
         <button
           onclick={fullSync}
-          disabled={isFullSyncing || isRefreshing}
+          disabled={isFullSyncing || isRefreshingToday || isRefreshing}
           class="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 hover:border-[#F7931A]/40 hover:bg-[#F7931A]/5 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
           title="Re-fetch all pages from Notion (catches deletions)"
         >
