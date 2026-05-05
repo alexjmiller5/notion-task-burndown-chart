@@ -1,4 +1,5 @@
 .env.local
+.deploy.env
 notion-cache.json
 .DS_Store
 node_modules/
