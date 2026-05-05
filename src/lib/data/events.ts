@@ -1,32 +1,14 @@
 import type { Task, TaskEvent } from "$lib/types.js";
+import { addDays, getCurrentDateStr, toLocalDateStr } from "./timezone.ts";
 
-function toDateStr(isoStr: string): string {
-  return isoStr.slice(0, 10);
-}
-
-function addOneDay(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  d.setDate(d.getDate() + 1);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-/**
- * Get the effective start date for a task (when it enters the active count).
- * Tasks become active on their due date. Westport tasks without due dates
- * use their created date instead.
- */
-function getEffectiveStartDate(task: Task): string {
+function getEffectiveStartDate(task: Task, tz: string): string {
   if (task.dueDate) {
-    return toDateStr(task.dueDate);
+    return toLocalDateStr(task.dueDate, tz);
   }
-  // Westport tasks (or any task without a due date) fall back to created date
-  return toDateStr(task.created);
+  return toLocalDateStr(task.created, tz);
 }
 
-export function buildEventsMap(tasks: Task[]): Map<string, TaskEvent> {
+export function buildEventsMap(tasks: Task[], tz: string): Map<string, TaskEvent> {
   const events = new Map<string, TaskEvent>();
 
   function addEvent(dateStr: string, type: keyof TaskEvent, task: Task) {
@@ -37,22 +19,17 @@ export function buildEventsMap(tasks: Task[]): Map<string, TaskEvent> {
   }
 
   for (const task of tasks) {
-    const startDate = getEffectiveStartDate(task);
-    const completedDate = task.completed ? toDateStr(task.completed) : null;
+    const startDate = getEffectiveStartDate(task, tz);
+    const completedDate = task.completed ? toLocalDateStr(task.completed, tz) : null;
 
-    // Skip tasks that were completed before their effective start date —
-    // they were finished before they'd ever enter the active count
-    if (completedDate && addOneDay(completedDate) <= startDate) continue;
+    if (completedDate && addDays(completedDate, 1) <= startDate) continue;
 
-    // Task enters the count on its effective start date (due date or created date)
     addEvent(startDate, "created", task);
 
-    // Task leaves the count when completed
     if (completedDate) {
-      addEvent(addOneDay(completedDate), "completed", task);
+      addEvent(addDays(completedDate, 1), "completed", task);
     }
 
-    // State changes for tag/due date history
     for (const h of task.history) {
       addEvent(h.date, "stateChange", task);
     }
@@ -61,16 +38,12 @@ export function buildEventsMap(tasks: Task[]): Map<string, TaskEvent> {
   return events;
 }
 
-export function getMinDate(tasks: Task[]): string {
-  if (tasks.length === 0) {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  }
+export function getMinDate(tasks: Task[], tz: string): string {
+  if (tasks.length === 0) return getCurrentDateStr(tz);
 
-  // Find earliest effective start date across all tasks
-  let min = getEffectiveStartDate(tasks[0]);
+  let min = getEffectiveStartDate(tasks[0], tz);
   for (const task of tasks) {
-    const start = getEffectiveStartDate(task);
+    const start = getEffectiveStartDate(task, tz);
     if (start < min) min = start;
   }
 
