@@ -1,5 +1,5 @@
 import type { Task, TaskEvent } from "$lib/types.js";
-import { addDays, getCurrentDateStr, toLocalDateStr } from "./timezone.ts";
+import { getCurrentDateStr, toLocalDateStr } from "./timezone.ts";
 
 function getEffectiveStartDate(task: Task, tz: string): string {
   if (task.dueDate) {
@@ -22,12 +22,12 @@ export function buildEventsMap(tasks: Task[], tz: string): Map<string, TaskEvent
     const startDate = getEffectiveStartDate(task, tz);
     const completedDate = task.completed ? toLocalDateStr(task.completed, tz) : null;
 
-    if (completedDate && addDays(completedDate, 1) <= startDate) continue;
+    if (completedDate && completedDate < startDate) continue;
 
     addEvent(startDate, "created", task);
 
     if (completedDate) {
-      addEvent(addDays(completedDate, 1), "completed", task);
+      addEvent(completedDate, "completed", task);
     }
 
     for (const h of task.history) {

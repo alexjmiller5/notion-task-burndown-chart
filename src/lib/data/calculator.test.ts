@@ -36,7 +36,7 @@ Deno.test("calculateDailyCounts — single active task, no completion", () => {
   assertEquals(result[2], { date: "2026-05-06", total: 1, Work: 1 });
 });
 
-Deno.test("calculateDailyCounts — task created and completed shows up then leaves", () => {
+Deno.test("calculateDailyCounts — task is gone from the count on its completion day", () => {
   const tasks = [
     makeTask({
       dueDate: "2026-05-04",
@@ -55,9 +55,28 @@ Deno.test("calculateDailyCounts — task created and completed shows up then lea
   });
   assertEquals(result[0].total, 0); // 5/3 — not yet active
   assertEquals(result[1].total, 1); // 5/4 — created
-  assertEquals(result[2].total, 1); // 5/5 — still active (completed end of day)
-  assertEquals(result[3].total, 0); // 5/6 — removed
+  assertEquals(result[2].total, 0); // 5/5 — completed: drop on the completion day
+  assertEquals(result[3].total, 0); // 5/6
   assertEquals(result[4].total, 0); // 5/7
+});
+
+Deno.test("calculateDailyCounts — completed-today task is excluded from today's count", () => {
+  // Mirrors the user's "Notion view says X, dashboard should match" expectation
+  const today = "2026-05-05";
+  const tasks = [
+    makeTask({ dueDate: "2026-05-04", completed: today, tags: ["Work"] }),
+  ];
+  const events = buildEventsMap(tasks, "America/New_York");
+  const result = calculateDailyCounts({
+    events,
+    minDate: "2026-05-04",
+    limitDate: today,
+    groupBy: "tag",
+    allCategories: ["Work"],
+    selectedCategories: new Set(["Work"]),
+  });
+  assertEquals(result[0].total, 1); // 5/4 — still active
+  assertEquals(result[1].total, 0); // 5/5 — completed today, gone now
 });
 
 Deno.test("calculateDailyCounts — task NOT in selected category is not counted", () => {

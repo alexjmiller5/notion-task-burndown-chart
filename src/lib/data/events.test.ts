@@ -49,11 +49,11 @@ Deno.test("buildEventsMap — same task buckets differently in UTC vs NY", () =>
   assertEquals(eventsNY.get("2026-05-03")?.created.length, 1);
 });
 
-Deno.test("buildEventsMap — completed task adds completion event one day after", () => {
+Deno.test("buildEventsMap — completion event fires on the completion day (no +1)", () => {
   const task = makeTask({ dueDate: "2026-05-01", completed: "2026-05-04" });
   const events = buildEventsMap([task], "America/New_York");
-  // Completion is on completedDate + 1 (so the chart shows it active through the completed day)
-  assertEquals(events.get("2026-05-05")?.completed.length, 1);
+  assertEquals(events.get("2026-05-04")?.completed.length, 1);
+  assertEquals(events.get("2026-05-05"), undefined);
 });
 
 Deno.test("buildEventsMap — task completed before due date is skipped entirely", () => {
@@ -63,11 +63,13 @@ Deno.test("buildEventsMap — task completed before due date is skipped entirely
   assertEquals(events.size, 0);
 });
 
-Deno.test("buildEventsMap — task completed same day as due IS counted (active for one day)", () => {
+Deno.test("buildEventsMap — created and completed same day produces both events on that day", () => {
+  // Both events fire on the same day; the calculator nets them to zero contribution.
   const task = makeTask({ dueDate: "2026-05-04", completed: "2026-05-04" });
   const events = buildEventsMap([task], "America/New_York");
   assertEquals(events.get("2026-05-04")?.created.length, 1);
-  assertEquals(events.get("2026-05-05")?.completed.length, 1);
+  assertEquals(events.get("2026-05-04")?.completed.length, 1);
+  assertEquals(events.get("2026-05-05"), undefined);
 });
 
 Deno.test("buildEventsMap — history entries become stateChange events", () => {
