@@ -10,6 +10,7 @@ WorkingDirectory=__DIR__
 Environment=PORT=__PORT__
 Environment=HOST=127.0.0.1
 Environment=ORIGIN=__ORIGIN__
+EnvironmentFile=/etc/burndown.env
 ExecStart=/home/__USER__/.deno/bin/deno run -A build/index.js
 Restart=on-failure
 RestartSec=5
