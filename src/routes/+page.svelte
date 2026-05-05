@@ -1,10 +1,15 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import dayjs from "dayjs";
-  import type { Task, DayCount, DueDateCategory, GroupBy } from "$lib/types.js";
+  import type { Task, DayCount, GroupBy } from "$lib/types.js";
   import { applyViewFilters } from "$lib/data/filters.js";
   import { buildEventsMap, getMinDate } from "$lib/data/events.js";
   import { calculateDailyCounts } from "$lib/data/calculator.js";
+  import {
+    DEFAULT_TIMEZONE,
+    TIMEZONES,
+    getCurrentDateStr,
+  } from "$lib/data/timezone.js";
+  import { getPresetRange, PRESET_LABELS, type PresetLabel } from "$lib/data/presets.js";
   import TaskChart from "../components/TaskChart.svelte";
   import RangeSlider from "../components/RangeSlider.svelte";
 
@@ -16,16 +21,6 @@
     "Social Planning", "Shopping", "Errand", "Finances",
   ];
 
-  const RANGE_PRESETS = [
-    { label: "7D", start: () => dayjs().subtract(7, "day"), end: () => dayjs() },
-    { label: "30D", start: () => dayjs().subtract(30, "day"), end: () => dayjs() },
-    { label: "90D", start: () => dayjs().subtract(90, "day"), end: () => dayjs() },
-    { label: "1Y", start: () => dayjs().subtract(1, "year"), end: () => dayjs() },
-    { label: "MTD", start: () => dayjs().startOf("month"), end: () => dayjs() },
-    { label: "YTD", start: () => dayjs().startOf("year"), end: () => dayjs() },
-    { label: "ALL", start: () => dayjs("2025-01-10"), end: () => dayjs() },
-  ];
-
   const GROUP_BY_OPTIONS: { value: GroupBy; label: string }[] = [
     { value: "tag", label: "Tag" },
     { value: "priority", label: "Priority" },
@@ -33,9 +28,6 @@
   ];
 
   const SLIDER_MIN = "2025-01-10";
-  const SLIDER_MAX = dayjs().add(2, "month").format("YYYY-MM-DD");
-
-  const ALL_STATUSES: DueDateCategory[] = ["Future", "Overdue", "Undated"];
 
   let allTasks: Task[] = $state(data.tasks);
   let allTags: string[] = $state(data.allTags);
@@ -43,12 +35,23 @@
   let allProjects: string[] = $state(data.allProjects ?? ["(No Project)"]);
   let tagColors: Record<string, string> = $state(data.tagColors ?? {});
 
+  let timezone: string = $state(DEFAULT_TIMEZONE);
+  const initial90D = getPresetRange("90D", DEFAULT_TIMEZONE);
   let activePreset: string = $state("90D");
-  let dateStart: string = $state(dayjs().subtract(90, "day").format("YYYY-MM-DD"));
-  let dateEnd: string = $state(dayjs().format("YYYY-MM-DD"));
+  let dateStart: string = $state(initial90D.start);
+  let dateEnd: string = $state(initial90D.end);
   let includeProjectTasks: boolean = $state(true);
   let showLegacyTags: boolean = $state(false);
   let groupBy: GroupBy = $state("tag");
+
+  let SLIDER_MAX = $derived.by(() => {
+    const today = getCurrentDateStr(timezone);
+    const [y, m, d] = today.split("-").map(Number);
+    const month2 = m + 2;
+    const newY = month2 > 12 ? y + 1 : y;
+    const newM = month2 > 12 ? month2 - 12 : month2;
+    return `${newY}-${String(newM).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  });
 
   let isRefreshing: boolean = $state(false);
   let refreshError: string | null = $state(null);
@@ -88,8 +91,8 @@
     groupBy === "project" ? ["(No Project)"] : [],
   );
 
-  let eventsMap = $derived(buildEventsMap(filteredTasks));
-  let minDate = $derived(getMinDate(filteredTasks));
+  let eventsMap = $derived(buildEventsMap(filteredTasks, timezone));
+  let minDate = $derived(getMinDate(filteredTasks, timezone));
 
   let dailyCounts: DayCount[] = $derived(
     calculateDailyCounts({
@@ -106,7 +109,7 @@
 
   let totalActive = $derived.by(() => {
     if (dailyCounts.length === 0) return 0;
-    const today = dayjs().format("YYYY-MM-DD");
+    const today = getCurrentDateStr(timezone);
     const todayEntry = dailyCounts.find((d) => d.date === today);
     if (todayEntry) return todayEntry.total as number;
     return dailyCounts[dailyCounts.length - 1].total as number;
@@ -133,11 +136,20 @@
 
   function selectPreset(label: string) {
     activePreset = label;
-    const preset = RANGE_PRESETS.find((p) => p.label === label);
-    if (!preset) return;
-    dateStart = preset.start().format("YYYY-MM-DD");
-    dateEnd = preset.end().format("YYYY-MM-DD");
+    const range = getPresetRange(label as PresetLabel, timezone);
+    dateStart = range.start;
+    dateEnd = range.end;
   }
+
+  $effect(() => {
+    // Recompute the active preset's range when timezone changes
+    timezone;
+    if (activePreset) {
+      const range = getPresetRange(activePreset as PresetLabel, timezone);
+      dateStart = range.start;
+      dateEnd = range.end;
+    }
+  });
 
   function handleSliderChange(start: string, end: string) {
     activePreset = "";
@@ -243,15 +255,15 @@
       <div class="flex items-center gap-3">
         <!-- Range presets -->
         <div class="flex items-center gap-1 bg-black/30 rounded-lg p-1">
-          {#each RANGE_PRESETS as preset}
+          {#each PRESET_LABELS as label}
             <button
-              onclick={() => selectPreset(preset.label)}
-              class="px-3 py-1.5 rounded-md text-xs font-[var(--font-mono)] uppercase tracking-wider transition-all duration-150 {activePreset === preset.label ? '' : 'preset-btn'}"
-              style={activePreset === preset.label
+              onclick={() => selectPreset(label)}
+              class="px-3 py-1.5 rounded-md text-xs font-[var(--font-mono)] uppercase tracking-wider transition-all duration-150 {activePreset === label ? '' : 'preset-btn'}"
+              style={activePreset === label
                 ? "background: #F7931A; color: black; font-weight: 500; box-shadow: 0 0 16px -4px rgba(247,147,26,0.5);"
                 : ""}
             >
-              {preset.label}
+              {label}
             </button>
           {/each}
         </div>
@@ -274,6 +286,24 @@
 
       <!-- Right: toggles -->
       <div class="flex items-center gap-3">
+        <!-- Timezone selector -->
+        <label
+          class="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 bg-transparent hover:border-white/20 transition-colors duration-150 cursor-pointer"
+          title="Timezone"
+        >
+          <svg class="w-4 h-4 text-[#94A3B8]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418"/>
+          </svg>
+          <select
+            bind:value={timezone}
+            class="bg-transparent text-xs font-[var(--font-mono)] uppercase tracking-wider text-[#94A3B8] focus:outline-none cursor-pointer"
+          >
+            {#each TIMEZONES as tz}
+              <option value={tz.id} class="bg-[#0F1115] text-white normal-case">{tz.label}</option>
+            {/each}
+          </select>
+        </label>
+
         {#if groupBy === "tag"}
           <button
             onclick={() => (showLegacyTags = !showLegacyTags)}
@@ -355,8 +385,4 @@
       </div>
     {/if}
   </div>
-
-  <p class="text-center text-white/15 font-[var(--font-mono)] text-[10px] uppercase tracking-[0.2em] mt-8">
-    Powered by Notion
-  </p>
 </div>

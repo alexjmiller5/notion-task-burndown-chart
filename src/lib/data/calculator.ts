@@ -1,13 +1,5 @@
-import type { Task, TaskEvent, DayCount, DueDateCategory, GroupBy } from "$lib/types.js";
-
-function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr + "T00:00:00");
-  d.setDate(d.getDate() + days);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
+import type { Task, TaskEvent, DayCount, GroupBy } from "$lib/types.js";
+import { addDays } from "./timezone.ts";
 
 function getTaskTagsForDate(
   task: Task,
@@ -22,7 +14,6 @@ function getTaskTagsForDate(
   return activeTags;
 }
 
-/** Get the group keys for a task based on the groupBy mode */
 function getGroupKeys(task: Task, groupBy: GroupBy, dateStr: string): string[] {
   switch (groupBy) {
     case "tag": {
@@ -33,6 +24,8 @@ function getGroupKeys(task: Task, groupBy: GroupBy, dateStr: string): string[] {
       return [task.priority];
     case "project":
       return [task.projectName];
+    default:
+      throw new Error(`Unhandled groupBy: ${groupBy}`);
   }
 }
 
