@@ -53,6 +53,8 @@
     return `${newY}-${String(newM).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   });
 
+  let isFullSyncing: boolean = $state(false);
+
   let isRefreshing: boolean = $state(false);
   let refreshError: string | null = $state(null);
 
@@ -150,6 +152,28 @@
       dateEnd = range.end;
     }
   });
+
+  async function fullSync() {
+    isFullSyncing = true;
+    refreshError = null;
+    try {
+      const res = await fetch("/api/refresh?full=1", { method: "POST" });
+      if (res.ok) {
+        const fresh = await res.json();
+        allTasks = fresh.tasks;
+        allTags = fresh.allTags;
+        if (fresh.allPriorities) allPriorities = fresh.allPriorities;
+        if (fresh.allProjects) allProjects = fresh.allProjects;
+        if (fresh.tagColors) tagColors = fresh.tagColors;
+      } else {
+        refreshError = `${res.status}`;
+      }
+    } catch (e) {
+      refreshError = (e as Error).message;
+    } finally {
+      isFullSyncing = false;
+    }
+  }
 
   function handleSliderChange(start: string, end: string) {
     activePreset = "";
@@ -303,6 +327,29 @@
             {/each}
           </select>
         </label>
+
+        <!-- Full Sync button -->
+        <button
+          onclick={fullSync}
+          disabled={isFullSyncing || isRefreshing}
+          class="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 hover:border-[#F7931A]/40 hover:bg-[#F7931A]/5 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Re-fetch all pages from Notion (catches deletions)"
+        >
+          <svg
+            class="w-4 h-4 text-[#94A3B8] {isFullSyncing ? 'animate-spin' : ''}"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/>
+          </svg>
+          <span class="text-xs font-[var(--font-mono)] uppercase tracking-wider text-[#94A3B8]">
+            {isFullSyncing ? "Syncing" : "Full Sync"}
+          </span>
+        </button>
 
         {#if groupBy === "tag"}
           <button

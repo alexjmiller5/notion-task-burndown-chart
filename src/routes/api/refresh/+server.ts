@@ -8,26 +8,44 @@ import {
   getIncrementalSinceDate,
   mergePages,
 } from "$lib/server/notion.js";
+import { shouldFullRefresh } from "$lib/server/refresh-policy.js";
 import { parseTasks } from "$lib/data/parser.js";
 
 export const POST: RequestHandler = async ({ url }) => {
-  const forceFullRefresh = url.searchParams.get("full") === "1";
+  const forceFull = url.searchParams.get("full") === "1";
   const apiKey = await getNotionApiKey();
-  const cached = await readCache();
-  const since = !forceFullRefresh ? getIncrementalSinceDate(cached) : null;
+  const cache = await readCache();
 
-  let freshPages;
-  if (since) {
-    freshPages = await fetchIncrementalPages(apiKey, since);
-    console.log(`Fetched ${freshPages.length} pages incrementally since ${since}`);
+  const doFull = shouldFullRefresh({
+    forceFull,
+    hasCache: cache.pages.length > 0,
+    lastFullRefreshAt: cache.lastFullRefreshAt,
+  });
+
+  let allPages;
+  let lastFullRefreshAt = cache.lastFullRefreshAt;
+
+  if (doFull) {
+    allPages = await fetchAllPages(apiKey);
+    lastFullRefreshAt = new Date().toISOString();
+    console.log(`Full refresh: ${allPages.length} pages`);
   } else {
-    freshPages = await fetchAllPages(apiKey);
-    console.log(`Full fetch: ${freshPages.length} pages`);
+    const since = getIncrementalSinceDate(cache.pages)!;
+    const fresh = await fetchIncrementalPages(apiKey, since);
+    allPages = mergePages(cache.pages, fresh);
+    console.log(`Incremental: ${fresh.length} fresh pages since ${since}`);
   }
 
-  const allPages = since ? mergePages(cached, freshPages) : freshPages;
-  await writeCache(allPages);
+  await writeCache({ lastFullRefreshAt, pages: allPages });
 
   const { tasks, allTags, allPriorities, allProjects, tagColors } = parseTasks(allPages);
-  return json({ tasks, allTags, allPriorities, allProjects, tagColors });
+  return json({
+    tasks,
+    allTags,
+    allPriorities,
+    allProjects,
+    tagColors,
+    lastFullRefreshAt,
+    didFullRefresh: doFull,
+  });
 };
