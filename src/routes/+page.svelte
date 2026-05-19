@@ -273,8 +273,8 @@
 
 <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12 flex flex-col gap-6 sm:gap-10">
 
-  <!-- Header (below chart on mobile, above on desktop) -->
-  <header class="order-2 sm:order-1">
+  <!-- Header -->
+  <header>
     <div class="flex items-start justify-between gap-4">
       <div>
         <h1 class="font-[var(--font-heading)] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
@@ -327,9 +327,9 @@
     {/if}
   </header>
 
-  <!-- Chart card (top on mobile, below header on desktop) -->
+  <!-- Chart card -->
   <div
-    class="order-1 sm:order-2 rounded-card border border-border-default bg-surface p-2.5 sm:p-6 flex flex-col"
+    class="rounded-card border border-border-default bg-surface p-2.5 sm:p-6 flex flex-col"
     style="box-shadow: 0 0 60px -20px var(--color-bitcoin-glow-soft);"
   >
     <!-- Controls — two rows on mobile, one row on desktop. Order-3 on mobile so chart shows first. -->
