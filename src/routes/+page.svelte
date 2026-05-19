@@ -338,11 +338,11 @@
       <!-- Row 1 (mobile) / Left half (desktop): view-shape controls -->
       <div class="flex items-center flex-wrap gap-2 sm:gap-3">
         <!-- Range presets -->
-        <div class="flex items-center gap-1 bg-black/30 rounded-control p-1">
+        <div class="flex items-center gap-0.5 sm:gap-1 bg-black/30 rounded-control p-0.5 sm:p-1">
           {#each PRESET_LABELS as label}
             <button
               onclick={() => selectPreset(label)}
-              class="px-3 py-2 sm:py-1.5 rounded-pill text-xs font-[var(--font-mono)] uppercase tracking-wider transition-all duration-150 {activePreset === label ? '' : 'preset-btn'}"
+              class="px-2 py-2 sm:px-3 sm:py-1.5 rounded-pill text-[11px] sm:text-xs font-[var(--font-mono)] uppercase tracking-wider transition-all duration-150 {activePreset === label ? '' : 'preset-btn'}"
               style={activePreset === label
                 ? "background: var(--color-bitcoin); color: black; font-weight: 500; box-shadow: 0 0 16px -4px var(--color-bitcoin-glow-strong);"
                 : ""}
@@ -353,11 +353,11 @@
         </div>
 
         <!-- Group by selector -->
-        <div class="flex items-center gap-1 bg-black/30 rounded-control p-1">
+        <div class="flex items-center gap-0.5 sm:gap-1 bg-black/30 rounded-control p-0.5 sm:p-1">
           {#each GROUP_BY_OPTIONS as option}
             <button
               onclick={() => (groupBy = option.value)}
-              class="px-3 py-2 sm:py-1.5 rounded-pill text-xs font-[var(--font-mono)] uppercase tracking-wider transition-all duration-150 {groupBy === option.value ? '' : 'preset-btn'}"
+              class="px-2 py-2 sm:px-3 sm:py-1.5 rounded-pill text-[11px] sm:text-xs font-[var(--font-mono)] uppercase tracking-wider transition-all duration-150 {groupBy === option.value ? '' : 'preset-btn'}"
               style={groupBy === option.value
                 ? "background: var(--color-bitcoin); color: black; font-weight: 500; box-shadow: 0 0 16px -4px var(--color-bitcoin-glow-strong);"
                 : ""}
