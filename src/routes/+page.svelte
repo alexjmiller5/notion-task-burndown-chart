@@ -271,10 +271,10 @@
   style="background: radial-gradient(ellipse, var(--color-bitcoin-glow-soft) 0%, transparent 70%); filter: blur(80px);"
 ></div>
 
-<div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+<div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12 flex flex-col gap-6 sm:gap-10">
 
-  <!-- Header -->
-  <header class="mb-6 sm:mb-10">
+  <!-- Header (below chart on mobile, above on desktop) -->
+  <header class="order-2 sm:order-1">
     <div class="flex items-start justify-between gap-4">
       <div>
         <h1 class="font-[var(--font-heading)] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
@@ -327,22 +327,43 @@
     {/if}
   </header>
 
-  <!-- Chart card -->
+  <!-- Chart card (top on mobile, below header on desktop) -->
   <div
-    class="rounded-card border border-border-default bg-surface p-2.5 sm:p-6"
+    class="order-1 sm:order-2 rounded-card border border-border-default bg-surface p-2.5 sm:p-6 flex flex-col"
     style="box-shadow: 0 0 60px -20px var(--color-bitcoin-glow-soft);"
   >
-    <!-- Controls — two rows on mobile, one row on desktop -->
-    <div class="flex flex-col gap-2 mb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+    <!-- Controls — two rows on mobile, one row on desktop. Order-3 on mobile so chart shows first. -->
+    <div class="order-3 sm:order-1 flex flex-col gap-2 mt-3 sm:mt-0 sm:mb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
 
       <!-- Row 1 (mobile) / Left half (desktop): view-shape controls -->
       <div class="flex items-center flex-wrap gap-2 sm:gap-3">
-        <!-- Range presets -->
-        <div class="flex items-center gap-0.5 sm:gap-1 bg-black/30 rounded-control p-0.5 sm:p-1">
+        <!-- Range preset dropdown (mobile only) -->
+        <label
+          class="flex sm:hidden items-center gap-2 px-3 py-2 rounded-control border border-border-default bg-transparent hover:border-border-strong transition-colors duration-150 cursor-pointer"
+          title="Date range"
+        >
+          <svg class="w-4 h-4 text-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 2.994v2.25m10.5-2.25v2.25m-14.252 13.5V7.491a2.25 2.25 0 0 1 2.25-2.25h13.5a2.25 2.25 0 0 1 2.25 2.25v11.251m-18 0a2.25 2.25 0 0 0 2.25 2.25h13.5a2.25 2.25 0 0 0 2.25-2.25m-18 0v-7.5a2.25 2.25 0 0 1 2.25-2.25h13.5a2.25 2.25 0 0 1 2.25 2.25v7.5m-6.75-6h2.25m-9 2.25h4.5m.002-2.25h.005v.006H12v-.006Zm-.001 4.5h.006v.006h-.006v-.005Zm-2.25.001h.005v.006H9.75v-.006Zm-2.25 0h.005v.005h-.006v-.005Zm6.75-2.247h.005v.005h-.005v-.005Zm0 2.247h.006v.006h-.006v-.006Zm2.25-2.248h.006V15H16.5v-.005Z"/>
+          </svg>
+          <select
+            bind:value={activePreset}
+            class="bg-transparent text-xs font-[var(--font-mono)] uppercase tracking-wider text-muted focus:outline-none cursor-pointer"
+          >
+            {#if activePreset === ""}
+              <option value="" class="bg-surface text-white normal-case">Custom range</option>
+            {/if}
+            {#each PRESET_LABELS as label}
+              <option value={label} class="bg-surface text-white normal-case">{label}</option>
+            {/each}
+          </select>
+        </label>
+
+        <!-- Range preset pill bar (desktop only) -->
+        <div class="hidden sm:flex items-center gap-1 bg-black/30 rounded-control p-1">
           {#each PRESET_LABELS as label}
             <button
               onclick={() => selectPreset(label)}
-              class="px-2 py-2 sm:px-3 sm:py-1.5 rounded-pill text-[11px] sm:text-xs font-[var(--font-mono)] uppercase tracking-wider transition-all duration-150 {activePreset === label ? '' : 'preset-btn'}"
+              class="px-3 py-1.5 rounded-pill text-xs font-[var(--font-mono)] uppercase tracking-wider transition-all duration-150 {activePreset === label ? '' : 'preset-btn'}"
               style={activePreset === label
                 ? "background: var(--color-bitcoin); color: black; font-weight: 500; box-shadow: 0 0 16px -4px var(--color-bitcoin-glow-strong);"
                 : ""}
@@ -352,12 +373,30 @@
           {/each}
         </div>
 
-        <!-- Group by selector -->
-        <div class="flex items-center gap-0.5 sm:gap-1 bg-black/30 rounded-control p-0.5 sm:p-1">
+        <!-- Group by dropdown (mobile only) -->
+        <label
+          class="flex sm:hidden items-center gap-2 px-3 py-2 rounded-control border border-border-default bg-transparent hover:border-border-strong transition-colors duration-150 cursor-pointer"
+          title="Group by"
+        >
+          <svg class="w-4 h-4 text-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/>
+          </svg>
+          <select
+            bind:value={groupBy}
+            class="bg-transparent text-xs font-[var(--font-mono)] uppercase tracking-wider text-muted focus:outline-none cursor-pointer"
+          >
+            {#each GROUP_BY_OPTIONS as option}
+              <option value={option.value} class="bg-surface text-white normal-case">{option.label}</option>
+            {/each}
+          </select>
+        </label>
+
+        <!-- Group by pill bar (desktop only) -->
+        <div class="hidden sm:flex items-center gap-1 bg-black/30 rounded-control p-1">
           {#each GROUP_BY_OPTIONS as option}
             <button
               onclick={() => (groupBy = option.value)}
-              class="px-2 py-2 sm:px-3 sm:py-1.5 rounded-pill text-[11px] sm:text-xs font-[var(--font-mono)] uppercase tracking-wider transition-all duration-150 {groupBy === option.value ? '' : 'preset-btn'}"
+              class="px-3 py-1.5 rounded-pill text-xs font-[var(--font-mono)] uppercase tracking-wider transition-all duration-150 {groupBy === option.value ? '' : 'preset-btn'}"
               style={groupBy === option.value
                 ? "background: var(--color-bitcoin); color: black; font-weight: 500; box-shadow: 0 0 16px -4px var(--color-bitcoin-glow-strong);"
                 : ""}
@@ -484,8 +523,8 @@
       </div>
     </div>
 
-    <!-- Range slider -->
-    <div class="mb-4 px-1">
+    <!-- Range slider — between controls and chart on desktop; between controls and stats on mobile -->
+    <div class="order-2 sm:order-2 mt-3 mb-0 sm:mt-0 sm:mb-4 px-1">
       <RangeSlider
         min={SLIDER_MIN}
         max={SLIDER_MAX}
@@ -495,16 +534,16 @@
       />
     </div>
 
-    <!-- Chart -->
+    <!-- Chart — top on mobile, bottom on desktop -->
     {#if allTasks.length === 0}
-      <div class="h-[var(--chart-height-mobile)] sm:h-[var(--chart-height-tablet)] flex items-center justify-center">
+      <div class="order-1 sm:order-3 h-[var(--chart-height-mobile)] sm:h-[var(--chart-height-tablet)] flex items-center justify-center">
         <div class="text-center">
           <div class="loader mx-auto"></div>
           <p class="mt-4 text-muted font-[var(--font-mono)] text-sm">Loading task data...</p>
         </div>
       </div>
     {:else}
-      <div class="h-[var(--chart-height-mobile)] sm:h-[var(--chart-height-tablet)] lg:h-[var(--chart-height-desktop)]">
+      <div class="order-1 sm:order-3 h-[var(--chart-height-mobile)] sm:h-[var(--chart-height-tablet)] lg:h-[var(--chart-height-desktop)]">
         <TaskChart
           {dailyCounts}
           {categories}
