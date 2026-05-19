@@ -273,8 +273,8 @@
 
 <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12 flex flex-col gap-6 sm:gap-10">
 
-  <!-- Header -->
-  <header>
+  <!-- Header — title at the top always -->
+  <header class="order-1">
     <div class="flex items-start justify-between gap-4">
       <div>
         <h1 class="font-[var(--font-heading)] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
@@ -301,35 +301,36 @@
         </div>
       {/if}
     </div>
-
-    {#if allTasks.length > 0}
-      <div class="grid grid-cols-2 gap-x-6 gap-y-4 mt-6 pt-6 border-t border-border-subtle sm:flex sm:items-center sm:gap-6">
-        <div>
-          <span class="font-[var(--font-mono)] text-xl sm:text-2xl md:text-3xl font-medium text-white">{totalActive}</span>
-          <span class="text-muted text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">active now</span>
-        </div>
-        <div class="hidden sm:block w-px h-6 bg-border-default"></div>
-        <div>
-          <span class="font-[var(--font-mono)] text-xl sm:text-2xl md:text-3xl font-medium text-white">{taskCount}</span>
-          <span class="text-muted text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">total tracked</span>
-        </div>
-        <div class="hidden sm:block w-px h-6 bg-border-default"></div>
-        <div>
-          <span class="font-[var(--font-mono)] text-xl sm:text-2xl md:text-3xl font-medium text-white">{allTags.length}</span>
-          <span class="text-muted text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">tags</span>
-        </div>
-        <div class="hidden sm:block w-px h-6 bg-border-default"></div>
-        <div>
-          <span class="font-[var(--font-mono)] text-xl sm:text-2xl md:text-3xl font-medium text-white">{projectCount}</span>
-          <span class="text-muted text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">with projects</span>
-        </div>
-      </div>
-    {/if}
   </header>
 
-  <!-- Chart card -->
+  <!-- Stats — under header on desktop, at the bottom on mobile -->
+  {#if allTasks.length > 0}
+    <section class="order-3 sm:order-2 grid grid-cols-2 gap-x-6 gap-y-4 sm:flex sm:items-center sm:gap-6 sm:-mt-4 sm:pt-6 sm:border-t sm:border-border-subtle">
+      <div>
+        <span class="font-[var(--font-mono)] text-xl sm:text-2xl md:text-3xl font-medium text-white">{totalActive}</span>
+        <span class="text-muted text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">active now</span>
+      </div>
+      <div class="hidden sm:block w-px h-6 bg-border-default"></div>
+      <div>
+        <span class="font-[var(--font-mono)] text-xl sm:text-2xl md:text-3xl font-medium text-white">{taskCount}</span>
+        <span class="text-muted text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">total tracked</span>
+      </div>
+      <div class="hidden sm:block w-px h-6 bg-border-default"></div>
+      <div>
+        <span class="font-[var(--font-mono)] text-xl sm:text-2xl md:text-3xl font-medium text-white">{allTags.length}</span>
+        <span class="text-muted text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">tags</span>
+      </div>
+      <div class="hidden sm:block w-px h-6 bg-border-default"></div>
+      <div>
+        <span class="font-[var(--font-mono)] text-xl sm:text-2xl md:text-3xl font-medium text-white">{projectCount}</span>
+        <span class="text-muted text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">with projects</span>
+      </div>
+    </section>
+  {/if}
+
+  <!-- Chart card — between header and stats on mobile, after stats on desktop -->
   <div
-    class="rounded-card border border-border-default bg-surface p-2.5 sm:p-6 flex flex-col"
+    class="order-2 sm:order-3 rounded-card border border-border-default bg-surface p-2.5 sm:p-6 flex flex-col"
     style="box-shadow: 0 0 60px -20px var(--color-bitcoin-glow-soft);"
   >
     <!-- Controls — two rows on mobile, one row on desktop. Order-3 on mobile so chart shows first. -->
