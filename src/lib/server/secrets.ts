@@ -15,7 +15,7 @@ export async function getNotionApiKey(): Promise<string> {
     args: [
       "item",
       "get",
-      "Stacked Task Chart Notion Internal Integration Secret",
+      "Notion Task Burndown Chart Notion Internal Integration Secret",
       "--fields",
       "credential",
       "--reveal",
