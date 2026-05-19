@@ -15,6 +15,11 @@
   let canvas: HTMLCanvasElement;
   let chart: any = null;
   let ChartJS: any = null;
+  let isMobile = $state(false);
+  let mobileMql: MediaQueryList | null = null;
+  function syncIsMobile(e: MediaQueryListEvent | MediaQueryList) {
+    isMobile = "matches" in e ? e.matches : false;
+  }
 
   // Map Notion color names to chart-friendly RGBA values
   const NOTION_COLOR_MAP: Record<string, { bg: string; border: string }> = {
@@ -84,10 +89,10 @@
             position: "top" as const,
             labels: {
               color: "#94A3B8",
-              font: { family: "JetBrains Mono", size: 11 },
-              boxWidth: 12,
-              boxHeight: 12,
-              padding: 16,
+              font: { family: "JetBrains Mono", size: isMobile ? 9 : 11 },
+              boxWidth: isMobile ? 10 : 12,
+              boxHeight: isMobile ? 10 : 12,
+              padding: isMobile ? 8 : 16,
               useBorderRadius: true,
               borderRadius: 2,
             },
@@ -175,6 +180,12 @@
   }
 
   onMount(async () => {
+    if (typeof window !== "undefined" && window.matchMedia) {
+      mobileMql = window.matchMedia("(max-width: 639px)");
+      isMobile = mobileMql.matches;
+      mobileMql.addEventListener("change", syncIsMobile);
+    }
+
     const mod = await import("chart.js");
     await import("chartjs-adapter-dayjs-4");
     ChartJS = mod.Chart;
@@ -198,11 +209,13 @@
     const _r = dateRange;
     const _tc = tagColors;
     const _h = hiddenByDefault;
+    const _m = isMobile;
     // Rebuild on any change
     rebuildChart();
   });
 
   onDestroy(() => {
+    mobileMql?.removeEventListener("change", syncIsMobile);
     chart?.destroy();
   });
 </script>
