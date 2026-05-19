@@ -13,6 +13,31 @@
   --color-bitcoin: #F7931A;
   --color-bitcoin-deep: #EA580C;
   --color-gold: #FFD600;
+
+  /* Semantic alpha layers — replace inline rgba() in components */
+  --color-border-subtle: rgba(255, 255, 255, 0.05);
+  --color-border-default: rgba(255, 255, 255, 0.10);
+  --color-border-strong: rgba(255, 255, 255, 0.15);
+  --color-bitcoin-glow-soft: rgba(247, 147, 26, 0.05);
+  --color-bitcoin-glow-medium: rgba(247, 147, 26, 0.30);
+  --color-bitcoin-glow-strong: rgba(247, 147, 26, 0.50);
+
+  /* Radii */
+  --radius-card: 1rem;
+  --radius-control: 0.5rem;
+  --radius-pill: 0.375rem;
+
+  /* Chart heights per breakpoint */
+  --chart-height-mobile: 360px;
+  --chart-height-tablet: 500px;
+  --chart-height-desktop: 550px;
+
+  /* Touch target minimum (iOS HIG) */
+  --tap-min: 44px;
+}
+
+body {
+  background: var(--color-void);
 }
 
 /* Grid pattern background */
