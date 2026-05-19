@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount, onDestroy } from "svelte";
+
   interface Props {
     min: string;
     max: string;
@@ -12,10 +14,27 @@
   let track: HTMLDivElement;
   let dragging: "start" | "end" | "range" | null = $state(null);
   let hovered: "start" | "end" | "range" | "track" | null = $state(null);
+  let isTouch = $state(false);
   let didDrag = false;
   let dragStartX = 0;
   let dragStartVal = 0;
   let dragEndVal = 0;
+
+  let touchMql: MediaQueryList | null = null;
+  function syncIsTouch(e: MediaQueryListEvent | MediaQueryList) {
+    isTouch = "matches" in e ? e.matches : false;
+  }
+
+  onMount(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    touchMql = window.matchMedia("(pointer: coarse)");
+    isTouch = touchMql.matches;
+    touchMql.addEventListener("change", syncIsTouch);
+  });
+
+  onDestroy(() => {
+    touchMql?.removeEventListener("change", syncIsTouch);
+  });
 
   function dateToOffset(date: string): number {
     const d = new Date(date + "T00:00:00");
@@ -109,26 +128,36 @@
     }
   }
 
-  // Handle sizes based on hover/drag state
+  // Handle sizes scale up on touch so the hit area is closer to 44×44 with the track padding
   function handleSize(type: "start" | "end"): number {
+    if (isTouch) {
+      if (dragging === type) return 28;
+      if (hovered === type) return 26;
+      return 24;
+    }
     if (dragging === type) return 20;
     if (hovered === type) return 18;
     return 14;
   }
 
   function handleGlow(type: "start" | "end"): string {
-    if (dragging === type) return "0 0 16px rgba(247,147,26,0.8)";
-    if (hovered === type) return "0 0 12px rgba(247,147,26,0.5)";
-    return "0 0 6px rgba(247,147,26,0.3)";
+    if (dragging === type) return "0 0 16px var(--color-bitcoin-glow-strong)";
+    if (hovered === type) return "0 0 12px var(--color-bitcoin-glow-medium)";
+    return "0 0 6px var(--color-bitcoin-glow-soft)";
   }
 
   function rangeGlow(): string {
-    if (dragging === "range") return "0 0 20px -2px rgba(247,147,26,0.6)";
-    if (hovered === "range") return "0 0 16px -2px rgba(247,147,26,0.5)";
-    return "0 0 12px -2px rgba(247,147,26,0.3)";
+    if (dragging === "range") return "0 0 20px -2px var(--color-bitcoin-glow-strong)";
+    if (hovered === "range") return "0 0 16px -2px var(--color-bitcoin-glow-medium)";
+    return "0 0 12px -2px var(--color-bitcoin-glow-soft)";
   }
 
   function rangeHeight(): number {
+    if (isTouch) {
+      if (dragging === "range") return 12;
+      if (hovered === "range") return 10;
+      return 8;
+    }
     if (dragging === "range") return 10;
     if (hovered === "range") return 8;
     return 6;
@@ -138,12 +167,16 @@
     if (hovered || dragging) return 0.08;
     return 0.03;
   }
+
+  // Track height scales for touch
+  let trackHeight = $derived(isTouch ? 48 : 40);
+  let trackCenter = $derived(trackHeight / 2);
 </script>
 
 <div class="space-y-2">
   <!-- Date labels -->
   <div class="flex justify-between text-[10px] font-[var(--font-mono)] uppercase tracking-wider transition-colors duration-150"
-    style="color: {dragging ? '#F7931A' : '#94A3B8'};"
+    style="color: {dragging ? 'var(--color-bitcoin)' : 'var(--color-muted)'};"
   >
     <span>{formatLabel(start)}</span>
     <span>{formatLabel(end)}</span>
@@ -154,22 +187,25 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     bind:this={track}
-    class="relative h-10 cursor-pointer select-none rounded-lg transition-colors duration-150"
-    style="background: rgba(255,255,255,{trackBgOpacity()});"
+    class="relative cursor-pointer select-none rounded-control transition-colors duration-150"
+    style="height: {trackHeight}px; background: rgba(255,255,255,{trackBgOpacity()});"
     onclick={handleTrackClick}
     onmouseenter={() => { if (!dragging) hovered = "track"; }}
     onmouseleave={() => { if (!dragging) hovered = null; }}
   >
     <!-- Background track line -->
-    <div class="absolute top-[17px] left-2 right-2 h-[6px] rounded-full bg-white/5"></div>
+    <div
+      class="absolute left-2 right-2 h-[6px] rounded-full bg-white/5"
+      style="top: {trackCenter - 3}px;"
+    ></div>
 
     <!-- Tick marks for month boundaries -->
     {#if totalDays > 0}
       {#each Array.from({ length: Math.ceil(totalDays / 30) }, (_, i) => i * 30) as tickOffset}
         {#if tickOffset > 0 && tickOffset < totalDays}
           <div
-            class="absolute top-[16px] w-px h-[8px] transition-colors duration-150"
-            style="left: {(tickOffset / totalDays) * 100}%; background: rgba(255,255,255,{hovered || dragging ? 0.15 : 0.07});"
+            class="absolute w-px h-[8px] transition-colors duration-150"
+            style="left: {(tickOffset / totalDays) * 100}%; top: {trackCenter - 4}px; background: rgba(255,255,255,{hovered || dragging ? 0.15 : 0.07});"
           ></div>
         {/if}
       {/each}
@@ -182,9 +218,9 @@
       style="
         left: {startPct}%;
         right: {100 - endPct}%;
-        top: {20 - rangeHeight() / 2}px;
+        top: {trackCenter - rangeHeight() / 2}px;
         height: {rangeHeight()}px;
-        background: linear-gradient(to right, #EA580C, #F7931A);
+        background: linear-gradient(to right, var(--color-bitcoin-deep), var(--color-bitcoin));
         box-shadow: {rangeGlow()};
       "
       onpointerdown={(e) => handlePointerDown(e, "range")}
@@ -196,12 +232,13 @@
     <!-- Start handle -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      class="absolute rounded-full bg-white border-2 border-[#F7931A] cursor-ew-resize z-10 transition-all duration-100"
+      class="absolute rounded-full bg-white border-2 cursor-ew-resize z-10 transition-all duration-100"
       style="
         left: calc({startPct}% - {handleSize('start') / 2}px);
-        top: {20 - handleSize('start') / 2}px;
+        top: {trackCenter - handleSize('start') / 2}px;
         width: {handleSize('start')}px;
         height: {handleSize('start')}px;
+        border-color: var(--color-bitcoin);
         box-shadow: {handleGlow('start')};
       "
       onpointerdown={(e) => handlePointerDown(e, "start")}
@@ -213,12 +250,13 @@
     <!-- End handle -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      class="absolute rounded-full bg-white border-2 border-[#F7931A] cursor-ew-resize z-10 transition-all duration-100"
+      class="absolute rounded-full bg-white border-2 cursor-ew-resize z-10 transition-all duration-100"
       style="
         left: calc({endPct}% - {handleSize('end') / 2}px);
-        top: {20 - handleSize('end') / 2}px;
+        top: {trackCenter - handleSize('end') / 2}px;
         width: {handleSize('end')}px;
         height: {handleSize('end')}px;
+        border-color: var(--color-bitcoin);
         box-shadow: {handleGlow('end')};
       "
       onpointerdown={(e) => handlePointerDown(e, "end")}

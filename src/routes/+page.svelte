@@ -11,6 +11,7 @@
     getStartOfDayUTC,
   } from "$lib/data/timezone.js";
   import { getPresetRange, PRESET_LABELS, type PresetLabel } from "$lib/data/presets.js";
+  import { loadPreferences, savePreferences } from "$lib/data/preferences.js";
   import TaskChart from "../components/TaskChart.svelte";
   import RangeSlider from "../components/RangeSlider.svelte";
 
@@ -45,6 +46,8 @@
   let showLegacyTags: boolean = $state(false);
   let groupBy: GroupBy = $state("tag");
 
+  let prefsLoaded = $state(false);
+
   let SLIDER_MAX = $derived.by(() => {
     const today = getCurrentDateStr(timezone);
     const [y, m, d] = today.split("-").map(Number);
@@ -68,7 +71,6 @@
     }),
   );
 
-  // Categories and selection based on groupBy mode
   let allCategories = $derived.by(() => {
     switch (groupBy) {
       case "tag": return allTags;
@@ -90,7 +92,6 @@
     }
   });
 
-  // Categories to hide by default in Chart.js legend (user can click to re-enable)
   let hiddenByDefault = $derived(
     groupBy === "project" ? ["(No Project)"] : [],
   );
@@ -122,7 +123,6 @@
   let taskCount = $derived(filteredTasks.length);
   let projectCount = $derived(allTasks.filter((t) => t.hasProject).length);
 
-  // Priority colors for chart
   const PRIORITY_COLORS: Record<string, string> = {
     High: "red",
     Medium: "yellow",
@@ -134,7 +134,7 @@
     switch (groupBy) {
       case "tag": return tagColors;
       case "priority": return PRIORITY_COLORS;
-      case "project": return {}; // Use fallback palette
+      case "project": return {};
     }
   });
 
@@ -153,6 +153,28 @@
       dateStart = range.start;
       dateEnd = range.end;
     }
+  });
+
+  // Persist preferences once loaded (skip the initial pre-load run)
+  $effect(() => {
+    // Subscribe to everything we want to persist
+    const tz = timezone;
+    const preset = activePreset;
+    const start = dateStart;
+    const end = dateEnd;
+    const legacy = showLegacyTags;
+    const projects = includeProjectTasks;
+    const grp = groupBy;
+    if (!prefsLoaded) return;
+    savePreferences({
+      version: 1,
+      timezone: tz,
+      groupBy: grp,
+      showLegacyTags: legacy,
+      includeProjectTasks: projects,
+      preset: (PRESET_LABELS as readonly string[]).includes(preset) ? (preset as PresetLabel) : null,
+      ...(preset === "" ? { dateStart: start, dateEnd: end } : {}),
+    });
   });
 
   async function postRefresh(url: string) {
@@ -197,6 +219,27 @@
   }
 
   onMount(async () => {
+    // Apply stored preferences before kicking off the network refresh
+    const stored = loadPreferences();
+    if (stored) {
+      timezone = stored.timezone;
+      groupBy = stored.groupBy;
+      showLegacyTags = stored.showLegacyTags;
+      includeProjectTasks = stored.includeProjectTasks;
+      if (stored.preset !== null) {
+        // Preset is a *rule* — re-anchor to today in the (possibly new) tz
+        const range = getPresetRange(stored.preset, stored.timezone);
+        activePreset = stored.preset;
+        dateStart = range.start;
+        dateEnd = range.end;
+      } else if (stored.dateStart && stored.dateEnd) {
+        activePreset = "";
+        dateStart = stored.dateStart;
+        dateEnd = stored.dateEnd;
+      }
+    }
+    prefsLoaded = true;
+
     isRefreshing = true;
     refreshError = null;
     try {
@@ -222,36 +265,37 @@
 <!-- Background grid pattern -->
 <div class="fixed inset-0 bg-grid pointer-events-none"></div>
 
+<!-- Background glow blob (desktop only — overflows phones) -->
 <div
-  class="fixed top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full pointer-events-none"
-  style="background: radial-gradient(ellipse, rgba(247,147,26,0.06) 0%, transparent 70%); filter: blur(80px);"
+  class="hidden sm:block fixed top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] rounded-full pointer-events-none"
+  style="background: radial-gradient(ellipse, var(--color-bitcoin-glow-soft) 0%, transparent 70%); filter: blur(80px);"
 ></div>
 
-<div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+<div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
 
   <!-- Header -->
-  <header class="mb-10">
+  <header class="mb-6 sm:mb-10">
     <div class="flex items-start justify-between gap-4">
       <div>
-        <h1 class="font-[var(--font-heading)] text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-tight">
-          Task <span class="bg-gradient-to-r from-[#F7931A] to-[#FFD600] bg-clip-text text-transparent">Burndown</span>
+        <h1 class="font-[var(--font-heading)] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
+          Task <span class="bg-gradient-to-r from-bitcoin to-gold bg-clip-text text-transparent">Burndown</span>
         </h1>
-        <p class="text-[#94A3B8] mt-2 font-[var(--font-body)] text-sm sm:text-base">
+        <p class="text-muted mt-2 font-[var(--font-body)] text-sm sm:text-base">
           Active task trends from Notion
         </p>
       </div>
 
       {#if isRefreshing}
-        <div class="flex items-center gap-2 text-[#94A3B8] font-[var(--font-mono)] text-xs uppercase tracking-wider mt-2">
+        <div class="hidden sm:flex items-center gap-2 text-muted font-[var(--font-mono)] text-xs uppercase tracking-wider mt-2">
           <div class="loader"></div>
           <span>Syncing</span>
         </div>
       {:else if refreshError}
-        <div class="flex items-center gap-2 text-red-400 font-[var(--font-mono)] text-xs mt-2">
+        <div class="hidden sm:flex items-center gap-2 text-red-400 font-[var(--font-mono)] text-xs mt-2">
           <span>Sync failed</span>
         </div>
       {:else if allTasks.length > 0}
-        <div class="flex items-center gap-2 text-[#94A3B8] font-[var(--font-mono)] text-xs uppercase tracking-wider mt-2">
+        <div class="hidden sm:flex items-center gap-2 text-muted font-[var(--font-mono)] text-xs uppercase tracking-wider mt-2">
           <div class="glow-dot"></div>
           <span>Live</span>
         </div>
@@ -259,25 +303,25 @@
     </div>
 
     {#if allTasks.length > 0}
-      <div class="flex items-center gap-6 mt-6 pt-6 border-t border-white/5">
+      <div class="grid grid-cols-2 gap-x-6 gap-y-4 mt-6 pt-6 border-t border-border-subtle sm:flex sm:items-center sm:gap-6">
         <div>
-          <span class="font-[var(--font-mono)] text-2xl sm:text-3xl font-medium text-white">{totalActive}</span>
-          <span class="text-[#94A3B8] text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">active now</span>
+          <span class="font-[var(--font-mono)] text-xl sm:text-2xl md:text-3xl font-medium text-white">{totalActive}</span>
+          <span class="text-muted text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">active now</span>
         </div>
-        <div class="w-px h-6 bg-white/10"></div>
+        <div class="hidden sm:block w-px h-6 bg-border-default"></div>
         <div>
-          <span class="font-[var(--font-mono)] text-2xl sm:text-3xl font-medium text-white">{taskCount}</span>
-          <span class="text-[#94A3B8] text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">total tracked</span>
+          <span class="font-[var(--font-mono)] text-xl sm:text-2xl md:text-3xl font-medium text-white">{taskCount}</span>
+          <span class="text-muted text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">total tracked</span>
         </div>
-        <div class="w-px h-6 bg-white/10"></div>
+        <div class="hidden sm:block w-px h-6 bg-border-default"></div>
         <div>
-          <span class="font-[var(--font-mono)] text-2xl sm:text-3xl font-medium text-white">{allTags.length}</span>
-          <span class="text-[#94A3B8] text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">tags</span>
+          <span class="font-[var(--font-mono)] text-xl sm:text-2xl md:text-3xl font-medium text-white">{allTags.length}</span>
+          <span class="text-muted text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">tags</span>
         </div>
-        <div class="w-px h-6 bg-white/10"></div>
+        <div class="hidden sm:block w-px h-6 bg-border-default"></div>
         <div>
-          <span class="font-[var(--font-mono)] text-2xl sm:text-3xl font-medium text-white">{projectCount}</span>
-          <span class="text-[#94A3B8] text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">with projects</span>
+          <span class="font-[var(--font-mono)] text-xl sm:text-2xl md:text-3xl font-medium text-white">{projectCount}</span>
+          <span class="text-muted text-xs font-[var(--font-mono)] uppercase tracking-wider ml-2">with projects</span>
         </div>
       </div>
     {/if}
@@ -285,21 +329,22 @@
 
   <!-- Chart card -->
   <div
-    class="rounded-2xl border border-white/10 bg-[#0F1115] p-4 sm:p-6"
-    style="box-shadow: 0 0 60px -20px rgba(247,147,26,0.08);"
+    class="rounded-card border border-border-default bg-surface p-3 sm:p-6"
+    style="box-shadow: 0 0 60px -20px var(--color-bitcoin-glow-soft);"
   >
-    <!-- Controls row -->
-    <div class="flex items-center justify-between mb-3 flex-wrap gap-3">
-      <!-- Left: range presets + group by -->
-      <div class="flex items-center gap-3">
+    <!-- Controls — two rows on mobile, one row on desktop -->
+    <div class="flex flex-col gap-2 mb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+
+      <!-- Row 1 (mobile) / Left half (desktop): view-shape controls -->
+      <div class="flex items-center flex-wrap gap-2 sm:gap-3">
         <!-- Range presets -->
-        <div class="flex items-center gap-1 bg-black/30 rounded-lg p-1">
+        <div class="flex items-center gap-1 bg-black/30 rounded-control p-1">
           {#each PRESET_LABELS as label}
             <button
               onclick={() => selectPreset(label)}
-              class="px-3 py-1.5 rounded-md text-xs font-[var(--font-mono)] uppercase tracking-wider transition-all duration-150 {activePreset === label ? '' : 'preset-btn'}"
+              class="px-3 py-2 sm:py-1.5 rounded-pill text-xs font-[var(--font-mono)] uppercase tracking-wider transition-all duration-150 {activePreset === label ? '' : 'preset-btn'}"
               style={activePreset === label
-                ? "background: #F7931A; color: black; font-weight: 500; box-shadow: 0 0 16px -4px rgba(247,147,26,0.5);"
+                ? "background: var(--color-bitcoin); color: black; font-weight: 500; box-shadow: 0 0 16px -4px var(--color-bitcoin-glow-strong);"
                 : ""}
             >
               {label}
@@ -308,13 +353,13 @@
         </div>
 
         <!-- Group by selector -->
-        <div class="flex items-center gap-1 bg-black/30 rounded-lg p-1">
+        <div class="flex items-center gap-1 bg-black/30 rounded-control p-1">
           {#each GROUP_BY_OPTIONS as option}
             <button
               onclick={() => (groupBy = option.value)}
-              class="px-3 py-1.5 rounded-md text-xs font-[var(--font-mono)] uppercase tracking-wider transition-all duration-150 {groupBy === option.value ? '' : 'preset-btn'}"
+              class="px-3 py-2 sm:py-1.5 rounded-pill text-xs font-[var(--font-mono)] uppercase tracking-wider transition-all duration-150 {groupBy === option.value ? '' : 'preset-btn'}"
               style={groupBy === option.value
-                ? "background: #F7931A; color: black; font-weight: 500; box-shadow: 0 0 16px -4px rgba(247,147,26,0.5);"
+                ? "background: var(--color-bitcoin); color: black; font-weight: 500; box-shadow: 0 0 16px -4px var(--color-bitcoin-glow-strong);"
                 : ""}
             >
               {option.label}
@@ -323,22 +368,22 @@
         </div>
       </div>
 
-      <!-- Right: toggles -->
-      <div class="flex items-center gap-3">
+      <!-- Row 2 (mobile) / Right half (desktop): side-controls -->
+      <div class="flex items-center flex-wrap gap-2 sm:gap-3">
         <!-- Timezone selector -->
         <label
-          class="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 bg-transparent hover:border-white/20 transition-colors duration-150 cursor-pointer"
+          class="flex items-center gap-2 px-3 py-2 rounded-control border border-border-default bg-transparent hover:border-border-strong transition-colors duration-150 cursor-pointer"
           title="Timezone"
         >
-          <svg class="w-4 h-4 text-[#94A3B8]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+          <svg class="w-4 h-4 text-muted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 0 1 3 12c0-1.605.42-3.113 1.157-4.418"/>
           </svg>
           <select
             bind:value={timezone}
-            class="bg-transparent text-xs font-[var(--font-mono)] uppercase tracking-wider text-[#94A3B8] focus:outline-none cursor-pointer"
+            class="bg-transparent text-xs font-[var(--font-mono)] uppercase tracking-wider text-muted focus:outline-none cursor-pointer"
           >
             {#each TIMEZONES as tz}
-              <option value={tz.id} class="bg-[#0F1115] text-white normal-case">{tz.label}</option>
+              <option value={tz.id} class="bg-surface text-white normal-case">{tz.label}</option>
             {/each}
           </select>
         </label>
@@ -347,11 +392,11 @@
         <button
           onclick={refreshToday}
           disabled={isRefreshingToday || isFullSyncing || isRefreshing}
-          class="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 hover:border-[#F7931A]/40 hover:bg-[#F7931A]/5 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="flex items-center gap-2 px-3 py-2 rounded-control border border-border-default hover:border-bitcoin/40 hover:bg-bitcoin/5 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
           title="Fetch tasks edited today only (in selected timezone)"
         >
           <svg
-            class="w-4 h-4 text-[#94A3B8] {isRefreshingToday ? 'animate-spin' : ''}"
+            class="w-4 h-4 text-muted {isRefreshingToday ? 'animate-spin' : ''}"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -361,8 +406,8 @@
           >
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
           </svg>
-          <span class="text-xs font-[var(--font-mono)] uppercase tracking-wider text-[#94A3B8]">
-            {isRefreshingToday ? "Syncing" : "Refresh Today"}
+          <span class="text-xs font-[var(--font-mono)] uppercase tracking-wider text-muted">
+            {isRefreshingToday ? "Syncing" : "Today"}
           </span>
         </button>
 
@@ -370,11 +415,11 @@
         <button
           onclick={fullSync}
           disabled={isFullSyncing || isRefreshingToday || isRefreshing}
-          class="flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 hover:border-[#F7931A]/40 hover:bg-[#F7931A]/5 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="flex items-center gap-2 px-3 py-2 rounded-control border border-border-default hover:border-bitcoin/40 hover:bg-bitcoin/5 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
           title="Re-fetch all pages from Notion (catches deletions)"
         >
           <svg
-            class="w-4 h-4 text-[#94A3B8] {isFullSyncing ? 'animate-spin' : ''}"
+            class="w-4 h-4 text-muted {isFullSyncing ? 'animate-spin' : ''}"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -384,22 +429,22 @@
           >
             <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/>
           </svg>
-          <span class="text-xs font-[var(--font-mono)] uppercase tracking-wider text-[#94A3B8]">
-            {isFullSyncing ? "Syncing" : "Full Sync"}
+          <span class="text-xs font-[var(--font-mono)] uppercase tracking-wider text-muted">
+            {isFullSyncing ? "Syncing" : "Full"}
           </span>
         </button>
 
         {#if groupBy === "tag"}
           <button
             onclick={() => (showLegacyTags = !showLegacyTags)}
-            class="flex items-center gap-3 px-4 py-2 rounded-lg border transition-all duration-150"
+            class="flex items-center gap-3 px-4 py-2 rounded-control border transition-all duration-150"
             style={showLegacyTags
-              ? "border-color: rgba(247,147,26,0.3); background: rgba(247,147,26,0.05);"
-              : "border-color: rgba(255,255,255,0.1); background: transparent;"}
+              ? "border-color: var(--color-bitcoin-glow-medium); background: var(--color-bitcoin-glow-soft);"
+              : "border-color: var(--color-border-default); background: transparent;"}
           >
             <div
               class="relative w-8 h-[18px] rounded-full transition-colors duration-150"
-              style="background: {showLegacyTags ? '#F7931A' : 'rgba(255,255,255,0.15)'};"
+              style="background: {showLegacyTags ? 'var(--color-bitcoin)' : 'var(--color-border-strong)'};"
             >
               <div
                 class="absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white shadow-sm transition-all duration-150"
@@ -408,22 +453,22 @@
             </div>
             <span
               class="text-xs font-[var(--font-mono)] uppercase tracking-wider"
-              style="color: {showLegacyTags ? '#F7931A' : '#94A3B8'};"
-            >Legacy Tags</span>
+              style="color: {showLegacyTags ? 'var(--color-bitcoin)' : 'var(--color-muted)'};"
+            >Legacy</span>
           </button>
         {/if}
 
         {#if groupBy !== "project"}
           <button
             onclick={() => (includeProjectTasks = !includeProjectTasks)}
-            class="flex items-center gap-3 px-4 py-2 rounded-lg border transition-all duration-150"
+            class="flex items-center gap-3 px-4 py-2 rounded-control border transition-all duration-150"
             style={includeProjectTasks
-              ? "border-color: rgba(247,147,26,0.3); background: rgba(247,147,26,0.05);"
-              : "border-color: rgba(255,255,255,0.1); background: transparent;"}
+              ? "border-color: var(--color-bitcoin-glow-medium); background: var(--color-bitcoin-glow-soft);"
+              : "border-color: var(--color-border-default); background: transparent;"}
           >
             <div
               class="relative w-8 h-[18px] rounded-full transition-colors duration-150"
-              style="background: {includeProjectTasks ? '#F7931A' : 'rgba(255,255,255,0.15)'};"
+              style="background: {includeProjectTasks ? 'var(--color-bitcoin)' : 'var(--color-border-strong)'};"
             >
               <div
                 class="absolute top-[2px] w-[14px] h-[14px] rounded-full bg-white shadow-sm transition-all duration-150"
@@ -432,7 +477,7 @@
             </div>
             <span
               class="text-xs font-[var(--font-mono)] uppercase tracking-wider"
-              style="color: {includeProjectTasks ? '#F7931A' : '#94A3B8'};"
+              style="color: {includeProjectTasks ? 'var(--color-bitcoin)' : 'var(--color-muted)'};"
             >Projects</span>
           </button>
         {/if}
@@ -452,14 +497,14 @@
 
     <!-- Chart -->
     {#if allTasks.length === 0}
-      <div class="h-[500px] flex items-center justify-center">
+      <div class="h-[var(--chart-height-mobile)] sm:h-[var(--chart-height-tablet)] flex items-center justify-center">
         <div class="text-center">
           <div class="loader mx-auto"></div>
-          <p class="mt-4 text-[#94A3B8] font-[var(--font-mono)] text-sm">Loading task data...</p>
+          <p class="mt-4 text-muted font-[var(--font-mono)] text-sm">Loading task data...</p>
         </div>
       </div>
     {:else}
-      <div class="h-[500px] sm:h-[550px]">
+      <div class="h-[var(--chart-height-mobile)] sm:h-[var(--chart-height-tablet)] lg:h-[var(--chart-height-desktop)]">
         <TaskChart
           {dailyCounts}
           {categories}
