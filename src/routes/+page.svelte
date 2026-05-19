@@ -49,12 +49,12 @@
   let prefsLoaded = $state(false);
 
   let SLIDER_MAX = $derived.by(() => {
+    // today + 14 days — gives a small future buffer without stretching the
+    // slider so wide that short ranges (7D/30D) collapse to invisible slivers.
     const today = getCurrentDateStr(timezone);
     const [y, m, d] = today.split("-").map(Number);
-    const month2 = m + 2;
-    const newY = month2 > 12 ? y + 1 : y;
-    const newM = month2 > 12 ? month2 - 12 : month2;
-    return `${newY}-${String(newM).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    const dt = new Date(Date.UTC(y, m - 1, d + 14));
+    return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
   });
 
   let isFullSyncing: boolean = $state(false);
@@ -329,7 +329,7 @@
 
   <!-- Chart card -->
   <div
-    class="rounded-card border border-border-default bg-surface p-3 sm:p-6"
+    class="rounded-card border border-border-default bg-surface p-2.5 sm:p-6"
     style="box-shadow: 0 0 60px -20px var(--color-bitcoin-glow-soft);"
   >
     <!-- Controls — two rows on mobile, one row on desktop -->
