@@ -1,13 +1,15 @@
 import type { NotionPage } from "$lib/types.js";
 
-const CACHE_FILE = "notion-cache.json";
+export function getCachePath(): string {
+  return Deno.env.get("BURNDOWN_CACHE_PATH") ?? "./notion-cache.json";
+}
 
 export interface CacheData {
   lastFullRefreshAt: string | null;
   pages: NotionPage[];
 }
 
-export async function readCache(path: string = CACHE_FILE): Promise<CacheData> {
+export async function readCache(path: string = getCachePath()): Promise<CacheData> {
   try {
     const text = await Deno.readTextFile(path);
     const parsed = JSON.parse(text);
@@ -28,7 +30,7 @@ export async function readCache(path: string = CACHE_FILE): Promise<CacheData> {
 
 export async function writeCache(
   data: CacheData,
-  path: string = CACHE_FILE,
+  path: string = getCachePath(),
 ): Promise<void> {
   await Deno.writeTextFile(path, JSON.stringify(data));
 }
