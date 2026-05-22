@@ -8,3 +8,6 @@ build/
 .vite/
 result
 result-*
+deploy/secrets.nix
+.terraform/
+.terraform.lock.hcl
