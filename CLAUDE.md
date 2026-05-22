@@ -72,6 +72,15 @@ UI controls (range presets, group-by selector, timezone dropdown, Full Sync butt
 
 **View filters**: Base filters (cancelled, useless) apply server-side. Toggle filters (legacy cutoff 2025-01-10, incomplete tasks) apply client-side for instant response.
 
+## Nix module + hermetic build (`nix/`)
+
+`nix/flake.nix` exports two outputs:
+
+- `packages.<system>.default` — hermetic SvelteKit build via a two-derivation pattern (fixed-output dep cache pinned to `deno.lock`, then a sandboxed build using `--cached-only`). Built artifact contains `build/`, `node_modules/`, and copies of `package.json`/`deno.json`/`deno.lock`.
+- `nixosModules.default` — `services.burndown` systemd unit + optional `tailscale serve` oneshot. Uses `DynamicUser` + `StateDirectory=burndown` so the cache file lives at `/var/lib/burndown/notion-cache.json`. Reads `NOTION_API_KEY` from `services.burndown.envFile` (default `/etc/burndown.env`, mode 0600).
+
+Local build smoke test (Mac): `cd nix && nix build .#packages.aarch64-darwin.default && deno run -A result/build/index.js`.
+
 ## Deployment
 
 Production deployment target is a Raspberry Pi running Ubuntu, on the user's tailnet, exposed only to the tailnet via `tailscale serve` (not funnel — that would be public).
