@@ -13,7 +13,7 @@ export const EMPTY_CACHE: TaskCache = {
 
 export async function readCache(bucket: R2Bucket): Promise<TaskCache> {
   const obj = await bucket.get(CACHE_KEY);
-  if (!obj) return EMPTY_CACHE;
+  if (!obj) return structuredClone(EMPTY_CACHE);
   return (await obj.json()) as TaskCache;
 }
 
