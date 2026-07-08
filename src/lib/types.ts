@@ -19,6 +19,7 @@ export interface Task {
   projectName: string;
   history: HistoryEntry[];
   hasProject: boolean;
+  lastEditedTime: string;
 }
 
 export interface HistoryEntry {
@@ -48,4 +49,8 @@ export interface ParsedData {
   allPriorities: string[];
   allProjects: string[];
   tagColors: Record<string, string>;
+}
+
+export interface TaskCache extends ParsedData {
+  lastFullRefreshAt: string | null;
 }
