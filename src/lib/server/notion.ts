@@ -35,8 +35,12 @@ async function fetchPaginated(
       throw new Error(`Notion API error ${response.status}: ${text}`);
     }
 
-    const data = await response.json();
-    allPages.push(...(data.results as NotionPage[]));
+    const data = (await response.json()) as {
+      results: NotionPage[];
+      has_more?: boolean;
+      next_cursor?: string | null;
+    };
+    allPages.push(...data.results);
     hasMore = data.has_more ?? false;
     startCursor = data.next_cursor ?? undefined;
   }
@@ -90,8 +94,12 @@ export async function fetchPageChunk(
     if (!response.ok) {
       throw new Error(`Notion API error ${response.status}: ${await response.text()}`);
     }
-    const data = await response.json();
-    pages.push(...(data.results as NotionPage[]));
+    const data = (await response.json()) as {
+      results: NotionPage[];
+      has_more?: boolean;
+      next_cursor?: string | null;
+    };
+    pages.push(...data.results);
     startCursor = data.next_cursor ?? undefined;
     if (!(data.has_more ?? false)) return { pages, nextCursor: null };
   }

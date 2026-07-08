@@ -15,6 +15,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     projectName: "(No Project)",
     history: [],
     hasProject: false,
+    lastEditedTime: "2026-01-02T00:00:00.000Z",
     ...overrides,
   };
 }
