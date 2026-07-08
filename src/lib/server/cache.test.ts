@@ -28,3 +28,12 @@ test("writeCache then readCache round-trips", async () => {
   expect(bucket.store.has(CACHE_KEY)).toEqual(true);
   expect(await readCache(bucket as unknown as R2Bucket)).toEqual(data);
 });
+
+test("readCache returns a fresh object each call (no shared singleton)", async () => {
+  const bucket = fakeBucket();
+  const first = await readCache(bucket as unknown as R2Bucket);
+  first.tasks.push({} as never);
+  const second = await readCache(bucket as unknown as R2Bucket);
+  expect(second.tasks).toEqual([]);
+  expect(EMPTY_CACHE.tasks).toEqual([]);
+});
