@@ -1,73 +1,43 @@
-set dotenv-load := true
-set dotenv-filename := ".deploy.env"
-set dotenv-required := false
+set shell := ["bash", "-cu"]
 
+default:
+    @just --list
+
+# Dev server (secrets injected if .env.tpl has any)
 dev:
-  deno task dev
-
-build:
-  deno task build
+    op run --env-file=.env.tpl -- bun run dev
 
 test:
-  deno task test
+    bun run test
 
-test-watch:
-  deno test -A --unstable-sloppy-imports --watch
+# All static analysis: wrangler types + svelte-check + prettier (read-only)
+check:
+    bun run check && bun run lint
 
-# First-time deploy: install Deno on the Pi, push secret, install systemd
-# unit, configure tailscale serve, then run `just deploy` to ship the build.
-# Idempotent — safe to re-run after editing the unit template or rotating
-# the secret.
-deploy-bootstrap:
-  @test -f .deploy.env || (echo "Missing .deploy.env — copy from .deploy.env.example" && exit 1)
-  ssh "$PI_USER@$PI_HOST" "mkdir -p $PI_DIR"
-  scp deploy/setup.sh "$PI_USER@$PI_HOST:/tmp/burndown-setup.sh"
-  ssh "$PI_USER@$PI_HOST" "bash /tmp/burndown-setup.sh '$PI_DIR' '$SERVE_PORT' '$APP_PORT'"
-  just deploy-set-secret
-  sed -e "s|__USER__|$PI_USER|g" \
-      -e "s|__DIR__|$PI_DIR|g" \
-      -e "s|__PORT__|$APP_PORT|g" \
-      -e "s|__ORIGIN__|$ORIGIN|g" \
-      deploy/burndown.service.template > /tmp/burndown.service
-  scp /tmp/burndown.service "$PI_USER@$PI_HOST:/tmp/burndown.service"
-  ssh "$PI_USER@$PI_HOST" "sudo install -m 644 /tmp/burndown.service /etc/systemd/system/burndown.service && sudo systemctl daemon-reload && sudo systemctl enable burndown.service"
-  rm /tmp/burndown.service
-  just deploy
-  @echo ""
-  @echo "✓ Bootstrap complete. App should be reachable at: $ORIGIN"
+fmt:
+    bun run format
 
-# Read the Notion API key from local 1Password and push it to the Pi as
-# /etc/burndown.env (mode 600, root-owned). Restarts the service if it's
-# already running. Run after rotating the secret.
-deploy-set-secret:
-  @test -f .deploy.env || (echo "Missing .deploy.env — copy from .deploy.env.example" && exit 1)
-  @KEY="$(op read "$SECRET_PATH")" && \
-    printf 'NOTION_API_KEY=%s\n' "$KEY" | \
-    ssh "$PI_USER@$PI_HOST" "sudo tee /etc/burndown.env > /dev/null && sudo chmod 600 /etc/burndown.env" >/dev/null
-  ssh "$PI_USER@$PI_HOST" "sudo systemctl try-restart burndown.service" || true
-  @echo "✓ Secret installed at /etc/burndown.env on Pi (mode 600)."
+build:
+    bun run build
 
-# Routine redeploy: build locally, rsync output to Pi, restart the service.
-deploy:
-  @test -f .deploy.env || (echo "Missing .deploy.env — copy from .deploy.env.example" && exit 1)
-  deno task build
-  rsync -az --delete build/ "$PI_USER@$PI_HOST:$PI_DIR/build/"
-  rsync -az package.json "$PI_USER@$PI_HOST:$PI_DIR/package.json"
-  ssh "$PI_USER@$PI_HOST" "sudo systemctl restart burndown.service"
-  @echo "✓ Deployed. App: $ORIGIN"
+# Stream logs from the deployed Worker
+logs:
+    bunx wrangler tail
 
-# Tail the service logs from the Pi.
-deploy-logs:
-  ssh "$PI_USER@$PI_HOST" "sudo journalctl -u burndown.service -f -n 50"
+# Push .env.tpl secrets to the Worker (no plaintext touches disk)
+sync-secrets:
+    ./scripts/sync-secrets.sh
 
-# Show service + tailscale serve status on the Pi.
-deploy-status:
-  ssh "$PI_USER@$PI_HOST" "sudo systemctl status burndown.service --no-pager; echo; sudo tailscale serve status"
+deploy: test build
+    bunx wrangler deploy
 
-# Stop the service (without removing it).
-deploy-stop:
-  ssh "$PI_USER@$PI_HOST" "sudo systemctl stop burndown.service"
+# --- project-specific recipes below (one-offs live in scripts/, run directly) ---
 
-# Remove the systemd unit and tailscale serve mapping. Cache file is preserved.
-deploy-uninstall:
-  ssh "$PI_USER@$PI_HOST" "sudo systemctl stop burndown.service; sudo systemctl disable burndown.service; sudo rm -f /etc/systemd/system/burndown.service; sudo systemctl daemon-reload; sudo tailscale serve --https=$SERVE_PORT off"
+# One-time bootstrap: create the R2 bucket and seed local + prod caches from
+# the legacy notion-cache.json (raw pages) in the repo root.
+setup:
+    bunx wrangler r2 bucket create task-burndown-cache || true
+    bun run prepare
+    bun scripts/seed-cache.ts
+    bunx wrangler r2 object put task-burndown-cache/task-cache.json --file /tmp/task-cache-seed.json --local
+    bunx wrangler r2 object put task-burndown-cache/task-cache.json --file /tmp/task-cache-seed.json --remote
