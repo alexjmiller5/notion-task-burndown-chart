@@ -62,35 +62,3 @@ export async function fetchIncrementalPages(
   });
 }
 
-export function getIncrementalSinceDate(
-  cached: NotionPage[],
-): string | null {
-  if (cached.length === 0) return null;
-
-  let maxCreated = "";
-  let maxEdited = "";
-
-  for (const page of cached) {
-    if (page.created_time > maxCreated) maxCreated = page.created_time;
-    if (page.last_edited_time > maxEdited) maxEdited = page.last_edited_time;
-  }
-
-  return maxCreated < maxEdited ? maxCreated : maxEdited;
-}
-
-export function mergePages(
-  cached: NotionPage[],
-  fresh: NotionPage[],
-): NotionPage[] {
-  const pageMap = new Map<string, NotionPage>();
-
-  for (const page of cached) {
-    pageMap.set(page.id, page);
-  }
-
-  for (const page of fresh) {
-    pageMap.set(page.id, page);
-  }
-
-  return Array.from(pageMap.values());
-}
