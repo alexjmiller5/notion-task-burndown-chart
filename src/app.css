@@ -103,3 +103,14 @@ body {
 input[type='date'] {
 	color-scheme: dark;
 }
+
+/* Mobile app-mode: page is exactly one viewport (see +page.svelte layout div);
+   suppress document scroll + iOS rubber-banding below the sm breakpoint. */
+@media (max-width: 639px) {
+	html,
+	body {
+		height: 100dvh;
+		overflow: hidden;
+		overscroll-behavior: none;
+	}
+}

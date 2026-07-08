@@ -169,11 +169,11 @@ Only the genuinely un-codifiable:
 
 ## Risks (accepted)
 
-| Risk                                                                                                    | Ceiling                                                                               | Fallback                                                |
-| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Incremental refresh CPU (parse + stringify 1.1 MB cache ≈ 5–7 ms) sits near the 10 ms cap               | Cache growing ~2x (≈ 7,500 tasks)                                                     | Shrink stored fields, or $5 paid tier                   |
+| Risk                                                                                                    | Ceiling                                                                               | Fallback                                                                                |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Incremental refresh CPU (parse + stringify 1.1 MB cache ≈ 5–7 ms) sits near the 10 ms cap               | Cache growing ~2x (≈ 7,500 tasks)                                                     | Shrink stored fields, or $5 paid tier                                                   |
 | Large incremental (e.g. after weeks away, hundreds of changed pages) could exceed chunk-free CPU budget | Rare in practice                                                                      | User runs Full Sync (button) — the client surfaces the error but does not auto-fallback |
-| Full-sync loop leaves a stale cache if abandoned mid-loop                                               | Cache only replaced by the final PUT — partial loops are harmless (no partial writes) | —                                                       |
+| Full-sync loop leaves a stale cache if abandoned mid-loop                                               | Cache only replaced by the final PUT — partial loops are harmless (no partial writes) | —                                                                                       |
 
 ## Testing the migration
 
