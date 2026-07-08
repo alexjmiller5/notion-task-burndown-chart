@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { expect, test } from "vitest";
 import {
   addDays,
   DEFAULT_TIMEZONE,
@@ -8,107 +8,102 @@ import {
   toLocalDateStr,
 } from "./timezone.ts";
 
-Deno.test("toLocalDateStr — date-only strings pass through unchanged", () => {
-  assertEquals(toLocalDateStr("2026-05-04", "America/New_York"), "2026-05-04");
-  assertEquals(toLocalDateStr("2026-05-04", "UTC"), "2026-05-04");
-  assertEquals(toLocalDateStr("2026-12-31", "America/Los_Angeles"), "2026-12-31");
+test("toLocalDateStr — date-only strings pass through unchanged", () => {
+  expect(toLocalDateStr("2026-05-04", "America/New_York")).toEqual("2026-05-04");
+  expect(toLocalDateStr("2026-05-04", "UTC")).toEqual("2026-05-04");
+  expect(toLocalDateStr("2026-12-31", "America/Los_Angeles")).toEqual("2026-12-31");
 });
 
-Deno.test("toLocalDateStr — UTC ISO converts to NY date (afternoon UTC stays same NY day)", () => {
+test("toLocalDateStr — UTC ISO converts to NY date (afternoon UTC stays same NY day)", () => {
   // 18:00 UTC = 14:00 EDT (May = EDT, UTC-4)
-  assertEquals(
+  expect(
     toLocalDateStr("2026-05-04T18:00:00.000Z", "America/New_York"),
-    "2026-05-04",
-  );
+  ).toEqual("2026-05-04");
 });
 
-Deno.test("toLocalDateStr — UTC ISO converts to NY date (early morning UTC = previous NY day)", () => {
+test("toLocalDateStr — UTC ISO converts to NY date (early morning UTC = previous NY day)", () => {
   // 03:00 UTC May 4 = 23:00 EDT May 3
-  assertEquals(
+  expect(
     toLocalDateStr("2026-05-04T03:00:00.000Z", "America/New_York"),
-    "2026-05-03",
-  );
+  ).toEqual("2026-05-03");
 });
 
-Deno.test("toLocalDateStr — UTC ISO with UTC tz returns the UTC date", () => {
-  assertEquals(
+test("toLocalDateStr — UTC ISO with UTC tz returns the UTC date", () => {
+  expect(
     toLocalDateStr("2026-05-04T03:00:00.000Z", "UTC"),
-    "2026-05-04",
-  );
+  ).toEqual("2026-05-04");
 });
 
-Deno.test("toLocalDateStr — UTC ISO converts to LA date", () => {
+test("toLocalDateStr — UTC ISO converts to LA date", () => {
   // 06:00 UTC May 4 = 23:00 PDT May 3
-  assertEquals(
+  expect(
     toLocalDateStr("2026-05-04T06:00:00.000Z", "America/Los_Angeles"),
-    "2026-05-03",
-  );
+  ).toEqual("2026-05-03");
 });
 
-Deno.test("toLocalDateStr — winter (EST = UTC-5), 04:00 UTC = previous day", () => {
+test("toLocalDateStr — winter (EST = UTC-5), 04:00 UTC = previous day", () => {
   // January = EST (UTC-5). 04:00 UTC Jan 15 = 23:00 EST Jan 14
-  assertEquals(
+  expect(
     toLocalDateStr("2026-01-15T04:00:00.000Z", "America/New_York"),
-    "2026-01-14",
-  );
+  ).toEqual("2026-01-14");
 });
 
-Deno.test("addDays — simple +1", () => {
-  assertEquals(addDays("2026-05-04", 1), "2026-05-05");
+test("addDays — simple +1", () => {
+  expect(addDays("2026-05-04", 1)).toEqual("2026-05-05");
 });
 
-Deno.test("addDays — simple -1", () => {
-  assertEquals(addDays("2026-05-04", -1), "2026-05-03");
+test("addDays — simple -1", () => {
+  expect(addDays("2026-05-04", -1)).toEqual("2026-05-03");
 });
 
-Deno.test("addDays — across spring DST (US, March 8 2026)", () => {
+test("addDays — across spring DST (US, March 8 2026)", () => {
   // Should produce calendar-day arithmetic regardless of DST
-  assertEquals(addDays("2026-03-08", 1), "2026-03-09");
-  assertEquals(addDays("2026-03-07", 2), "2026-03-09");
+  expect(addDays("2026-03-08", 1)).toEqual("2026-03-09");
+  expect(addDays("2026-03-07", 2)).toEqual("2026-03-09");
 });
 
-Deno.test("addDays — across fall DST (US, Nov 1 2026)", () => {
-  assertEquals(addDays("2026-11-01", 1), "2026-11-02");
+test("addDays — across fall DST (US, Nov 1 2026)", () => {
+  expect(addDays("2026-11-01", 1)).toEqual("2026-11-02");
 });
 
-Deno.test("addDays — month boundary", () => {
-  assertEquals(addDays("2026-01-31", 1), "2026-02-01");
+test("addDays — month boundary", () => {
+  expect(addDays("2026-01-31", 1)).toEqual("2026-02-01");
 });
 
-Deno.test("addDays — year boundary", () => {
-  assertEquals(addDays("2026-12-31", 1), "2027-01-01");
-  assertEquals(addDays("2026-01-01", -1), "2025-12-31");
+test("addDays — year boundary", () => {
+  expect(addDays("2026-12-31", 1)).toEqual("2027-01-01");
+  expect(addDays("2026-01-01", -1)).toEqual("2025-12-31");
 });
 
-Deno.test("addDays — leap year (2024-02-28 + 1)", () => {
-  assertEquals(addDays("2024-02-28", 1), "2024-02-29");
-  assertEquals(addDays("2024-02-29", 1), "2024-03-01");
+test("addDays — leap year (2024-02-28 + 1)", () => {
+  expect(addDays("2024-02-28", 1)).toEqual("2024-02-29");
+  expect(addDays("2024-02-29", 1)).toEqual("2024-03-01");
 });
 
-Deno.test("addDays — non-leap-year (2026-02-28 + 1)", () => {
-  assertEquals(addDays("2026-02-28", 1), "2026-03-01");
+test("addDays — non-leap-year (2026-02-28 + 1)", () => {
+  expect(addDays("2026-02-28", 1)).toEqual("2026-03-01");
 });
 
-Deno.test("addDays — zero days returns same date", () => {
-  assertEquals(addDays("2026-05-04", 0), "2026-05-04");
+test("addDays — zero days returns same date", () => {
+  expect(addDays("2026-05-04", 0)).toEqual("2026-05-04");
 });
 
-Deno.test("addDays — large step", () => {
-  assertEquals(addDays("2026-01-01", 365), "2027-01-01");
+test("addDays — large step", () => {
+  expect(addDays("2026-01-01", 365)).toEqual("2027-01-01");
 });
 
-Deno.test("getCurrentDateStr — returns YYYY-MM-DD format using injected now", () => {
+test("getCurrentDateStr — returns YYYY-MM-DD format using injected now", () => {
   const fakeNow = new Date("2026-05-04T18:00:00.000Z"); // 14:00 EDT
-  assertEquals(getCurrentDateStr("America/New_York", fakeNow), "2026-05-04");
-  assertEquals(getCurrentDateStr("UTC", fakeNow), "2026-05-04");
+  expect(getCurrentDateStr("America/New_York", fakeNow)).toEqual("2026-05-04");
+  expect(getCurrentDateStr("UTC", fakeNow)).toEqual("2026-05-04");
 });
 
-Deno.test("getCurrentDateStr — early UTC = previous local day in NY", () => {
+test("getCurrentDateStr — early UTC = previous local day in NY", () => {
   const fakeNow = new Date("2026-05-04T03:00:00.000Z"); // 23:00 EDT May 3
-  assertEquals(getCurrentDateStr("America/New_York", fakeNow), "2026-05-03");
+  expect(getCurrentDateStr("America/New_York", fakeNow)).toEqual("2026-05-03");
 });
 
-Deno.test("TIMEZONES — curated list contains expected entries", () => {
+test("TIMEZONES — curated list contains expected entries", () => {
   const ids = TIMEZONES.map((t) => t.id);
   for (const expected of [
     "America/New_York",
@@ -118,56 +113,47 @@ Deno.test("TIMEZONES — curated list contains expected entries", () => {
     "UTC",
     "Europe/London",
   ]) {
-    assertEquals(
-      ids.includes(expected),
-      true,
-      `Expected TIMEZONES to include ${expected}`,
-    );
+    expect(ids.includes(expected)).toEqual(true);
   }
 });
 
-Deno.test("DEFAULT_TIMEZONE is America/New_York", () => {
-  assertEquals(DEFAULT_TIMEZONE, "America/New_York");
+test("DEFAULT_TIMEZONE is America/New_York", () => {
+  expect(DEFAULT_TIMEZONE).toEqual("America/New_York");
 });
 
-Deno.test("getStartOfDayUTC — NY in May (EDT, UTC-4) → 04:00Z", () => {
+test("getStartOfDayUTC — NY in May (EDT, UTC-4) → 04:00Z", () => {
   // Any moment on May 5 NY → start of day = midnight EDT = 04:00 UTC
   const noonUTC = new Date("2026-05-05T12:00:00.000Z");
-  assertEquals(
+  expect(
     getStartOfDayUTC("America/New_York", noonUTC),
-    "2026-05-05T04:00:00.000Z",
-  );
+  ).toEqual("2026-05-05T04:00:00.000Z");
 });
 
-Deno.test("getStartOfDayUTC — NY in January (EST, UTC-5) → 05:00Z", () => {
+test("getStartOfDayUTC — NY in January (EST, UTC-5) → 05:00Z", () => {
   const noonUTC = new Date("2026-01-15T12:00:00.000Z");
-  assertEquals(
+  expect(
     getStartOfDayUTC("America/New_York", noonUTC),
-    "2026-01-15T05:00:00.000Z",
-  );
+  ).toEqual("2026-01-15T05:00:00.000Z");
 });
 
-Deno.test("getStartOfDayUTC — LA in May (PDT, UTC-7) → 07:00Z", () => {
+test("getStartOfDayUTC — LA in May (PDT, UTC-7) → 07:00Z", () => {
   const noonUTC = new Date("2026-05-05T18:00:00.000Z");
-  assertEquals(
+  expect(
     getStartOfDayUTC("America/Los_Angeles", noonUTC),
-    "2026-05-05T07:00:00.000Z",
-  );
+  ).toEqual("2026-05-05T07:00:00.000Z");
 });
 
-Deno.test("getStartOfDayUTC — UTC tz → midnight Z", () => {
+test("getStartOfDayUTC — UTC tz → midnight Z", () => {
   const noonUTC = new Date("2026-05-05T12:00:00.000Z");
-  assertEquals(
+  expect(
     getStartOfDayUTC("UTC", noonUTC),
-    "2026-05-05T00:00:00.000Z",
-  );
+  ).toEqual("2026-05-05T00:00:00.000Z");
 });
 
-Deno.test("getStartOfDayUTC — early UTC = previous day in NY", () => {
+test("getStartOfDayUTC — early UTC = previous day in NY", () => {
   // 03:00 UTC May 5 = 23:00 EDT May 4 → start of NY day = May 4 midnight EDT = 04:00 UTC May 4
   const earlyUTC = new Date("2026-05-05T03:00:00.000Z");
-  assertEquals(
+  expect(
     getStartOfDayUTC("America/New_York", earlyUTC),
-    "2026-05-04T04:00:00.000Z",
-  );
+  ).toEqual("2026-05-04T04:00:00.000Z");
 });

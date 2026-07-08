@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { expect, test } from "vitest";
 import { calculateDailyCounts } from "./calculator.ts";
 import { buildEventsMap } from "./events.ts";
 import type { Task } from "$lib/types.js";
@@ -19,7 +19,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
   };
 }
 
-Deno.test("calculateDailyCounts — single active task, no completion", () => {
+test("calculateDailyCounts — single active task, no completion", () => {
   const tasks = [makeTask({ dueDate: "2026-05-04", tags: ["Work"] })];
   const events = buildEventsMap(tasks, "America/New_York");
   const result = calculateDailyCounts({
@@ -30,13 +30,13 @@ Deno.test("calculateDailyCounts — single active task, no completion", () => {
     allCategories: ["Work"],
     selectedCategories: new Set(["Work"]),
   });
-  assertEquals(result.length, 3);
-  assertEquals(result[0], { date: "2026-05-04", total: 1, Work: 1 });
-  assertEquals(result[1], { date: "2026-05-05", total: 1, Work: 1 });
-  assertEquals(result[2], { date: "2026-05-06", total: 1, Work: 1 });
+  expect(result.length).toEqual(3);
+  expect(result[0]).toEqual({ date: "2026-05-04", total: 1, Work: 1 });
+  expect(result[1]).toEqual({ date: "2026-05-05", total: 1, Work: 1 });
+  expect(result[2]).toEqual({ date: "2026-05-06", total: 1, Work: 1 });
 });
 
-Deno.test("calculateDailyCounts — task is gone from the count on its completion day", () => {
+test("calculateDailyCounts — task is gone from the count on its completion day", () => {
   const tasks = [
     makeTask({
       dueDate: "2026-05-04",
@@ -53,14 +53,14 @@ Deno.test("calculateDailyCounts — task is gone from the count on its completio
     allCategories: ["Work"],
     selectedCategories: new Set(["Work"]),
   });
-  assertEquals(result[0].total, 0); // 5/3 — not yet active
-  assertEquals(result[1].total, 1); // 5/4 — created
-  assertEquals(result[2].total, 0); // 5/5 — completed: drop on the completion day
-  assertEquals(result[3].total, 0); // 5/6
-  assertEquals(result[4].total, 0); // 5/7
+  expect(result[0].total).toEqual(0); // 5/3 — not yet active
+  expect(result[1].total).toEqual(1); // 5/4 — created
+  expect(result[2].total).toEqual(0); // 5/5 — completed: drop on the completion day
+  expect(result[3].total).toEqual(0); // 5/6
+  expect(result[4].total).toEqual(0); // 5/7
 });
 
-Deno.test("calculateDailyCounts — completed-today task is excluded from today's count", () => {
+test("calculateDailyCounts — completed-today task is excluded from today's count", () => {
   // Mirrors the user's "Notion view says X, dashboard should match" expectation
   const today = "2026-05-05";
   const tasks = [
@@ -75,11 +75,11 @@ Deno.test("calculateDailyCounts — completed-today task is excluded from today'
     allCategories: ["Work"],
     selectedCategories: new Set(["Work"]),
   });
-  assertEquals(result[0].total, 1); // 5/4 — still active
-  assertEquals(result[1].total, 0); // 5/5 — completed today, gone now
+  expect(result[0].total).toEqual(1); // 5/4 — still active
+  expect(result[1].total).toEqual(0); // 5/5 — completed today, gone now
 });
 
-Deno.test("calculateDailyCounts — task NOT in selected category is not counted", () => {
+test("calculateDailyCounts — task NOT in selected category is not counted", () => {
   const tasks = [makeTask({ dueDate: "2026-05-04", tags: ["Work"] })];
   const events = buildEventsMap(tasks, "America/New_York");
   const result = calculateDailyCounts({
@@ -90,12 +90,12 @@ Deno.test("calculateDailyCounts — task NOT in selected category is not counted
     allCategories: ["Work", "Chore"],
     selectedCategories: new Set(["Chore"]), // Work not selected
   });
-  assertEquals(result[0].total, 0);
-  assertEquals(result[0].Work, 0);
-  assertEquals(result[0].Chore, 0);
+  expect(result[0].total).toEqual(0);
+  expect(result[0].Work).toEqual(0);
+  expect(result[0].Chore).toEqual(0);
 });
 
-Deno.test("calculateDailyCounts — minDate >= limitDate returns empty", () => {
+test("calculateDailyCounts — minDate >= limitDate returns empty", () => {
   const result = calculateDailyCounts({
     events: new Map(),
     minDate: "2026-05-05",
@@ -104,10 +104,10 @@ Deno.test("calculateDailyCounts — minDate >= limitDate returns empty", () => {
     allCategories: [],
     selectedCategories: new Set(),
   });
-  assertEquals(result, []);
+  expect(result).toEqual([]);
 });
 
-Deno.test("calculateDailyCounts — DST spring forward day arithmetic", () => {
+test("calculateDailyCounts — DST spring forward day arithmetic", () => {
   // March 8 2026 is US spring forward day. The day-by-day loop should produce
   // March 7, 8, 9, 10 in sequence with no gaps or duplicates.
   const tasks = [makeTask({ dueDate: "2026-03-07", tags: ["Work"] })];
@@ -121,10 +121,10 @@ Deno.test("calculateDailyCounts — DST spring forward day arithmetic", () => {
     selectedCategories: new Set(["Work"]),
   });
   const dates = result.map((r) => r.date);
-  assertEquals(dates, ["2026-03-07", "2026-03-08", "2026-03-09", "2026-03-10"]);
+  expect(dates).toEqual(["2026-03-07", "2026-03-08", "2026-03-09", "2026-03-10"]);
 });
 
-Deno.test("calculateDailyCounts — state change adds task to new tag bucket", () => {
+test("calculateDailyCounts — state change adds task to new tag bucket", () => {
   const tasks = [
     makeTask({
       dueDate: "2026-05-01",
@@ -144,9 +144,9 @@ Deno.test("calculateDailyCounts — state change adds task to new tag bucket", (
     selectedCategories: new Set(["Work", "Chore"]),
   });
   // 5/1: Work=1, Chore=0
-  assertEquals(result[0].Work, 1);
-  assertEquals(result[0].Chore, 0);
+  expect(result[0].Work).toEqual(1);
+  expect(result[0].Chore).toEqual(0);
   // 5/3: state changed to Chore
-  assertEquals(result[2].Work, 0);
-  assertEquals(result[2].Chore, 1);
+  expect(result[2].Work).toEqual(0);
+  expect(result[2].Chore).toEqual(1);
 });

@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { expect, test } from "vitest";
 import { buildEventsMap, getMinDate } from "./events.ts";
 import type { Task } from "$lib/types.js";
 
@@ -18,26 +18,26 @@ function makeTask(overrides: Partial<Task> = {}): Task {
   };
 }
 
-Deno.test("buildEventsMap — task with due date enters on due date", () => {
+test("buildEventsMap — task with due date enters on due date", () => {
   const task = makeTask({ dueDate: "2026-05-04" });
   const events = buildEventsMap([task], "America/New_York");
   const day = events.get("2026-05-04");
-  assertEquals(day?.created.length, 1);
-  assertEquals(day?.created[0].id, "task-1");
+  expect(day?.created.length).toEqual(1);
+  expect(day?.created[0].id).toEqual("task-1");
 });
 
-Deno.test("buildEventsMap — task without due date falls back to created (NY)", () => {
+test("buildEventsMap — task without due date falls back to created (NY)", () => {
   // 03:00 UTC May 4 → 23:00 EDT May 3
   const task = makeTask({
     created: "2026-05-04T03:00:00.000Z",
     dueDate: null,
   });
   const events = buildEventsMap([task], "America/New_York");
-  assertEquals(events.get("2026-05-03")?.created.length, 1);
-  assertEquals(events.get("2026-05-04"), undefined);
+  expect(events.get("2026-05-03")?.created.length).toEqual(1);
+  expect(events.get("2026-05-04")).toEqual(undefined);
 });
 
-Deno.test("buildEventsMap — same task buckets differently in UTC vs NY", () => {
+test("buildEventsMap — same task buckets differently in UTC vs NY", () => {
   // 03:00 UTC = May 4 in UTC, May 3 in NY
   const task = makeTask({
     created: "2026-05-04T03:00:00.000Z",
@@ -45,34 +45,34 @@ Deno.test("buildEventsMap — same task buckets differently in UTC vs NY", () =>
   });
   const eventsUTC = buildEventsMap([task], "UTC");
   const eventsNY = buildEventsMap([task], "America/New_York");
-  assertEquals(eventsUTC.get("2026-05-04")?.created.length, 1);
-  assertEquals(eventsNY.get("2026-05-03")?.created.length, 1);
+  expect(eventsUTC.get("2026-05-04")?.created.length).toEqual(1);
+  expect(eventsNY.get("2026-05-03")?.created.length).toEqual(1);
 });
 
-Deno.test("buildEventsMap — completion event fires on the completion day (no +1)", () => {
+test("buildEventsMap — completion event fires on the completion day (no +1)", () => {
   const task = makeTask({ dueDate: "2026-05-01", completed: "2026-05-04" });
   const events = buildEventsMap([task], "America/New_York");
-  assertEquals(events.get("2026-05-04")?.completed.length, 1);
-  assertEquals(events.get("2026-05-05"), undefined);
+  expect(events.get("2026-05-04")?.completed.length).toEqual(1);
+  expect(events.get("2026-05-05")).toEqual(undefined);
 });
 
-Deno.test("buildEventsMap — task completed before due date is skipped entirely", () => {
+test("buildEventsMap — task completed before due date is skipped entirely", () => {
   // due 2026-05-04, completed 2026-05-01 — was finished before it'd ever count
   const task = makeTask({ dueDate: "2026-05-04", completed: "2026-05-01" });
   const events = buildEventsMap([task], "America/New_York");
-  assertEquals(events.size, 0);
+  expect(events.size).toEqual(0);
 });
 
-Deno.test("buildEventsMap — created and completed same day produces both events on that day", () => {
+test("buildEventsMap — created and completed same day produces both events on that day", () => {
   // Both events fire on the same day; the calculator nets them to zero contribution.
   const task = makeTask({ dueDate: "2026-05-04", completed: "2026-05-04" });
   const events = buildEventsMap([task], "America/New_York");
-  assertEquals(events.get("2026-05-04")?.created.length, 1);
-  assertEquals(events.get("2026-05-04")?.completed.length, 1);
-  assertEquals(events.get("2026-05-05"), undefined);
+  expect(events.get("2026-05-04")?.created.length).toEqual(1);
+  expect(events.get("2026-05-04")?.completed.length).toEqual(1);
+  expect(events.get("2026-05-05")).toEqual(undefined);
 });
 
-Deno.test("buildEventsMap — history entries become stateChange events", () => {
+test("buildEventsMap — history entries become stateChange events", () => {
   const task = makeTask({
     dueDate: "2026-05-01",
     history: [
@@ -81,26 +81,26 @@ Deno.test("buildEventsMap — history entries become stateChange events", () => 
     ],
   });
   const events = buildEventsMap([task], "America/New_York");
-  assertEquals(events.get("2026-05-02")?.stateChange.length, 1);
-  assertEquals(events.get("2026-05-03")?.stateChange.length, 1);
+  expect(events.get("2026-05-02")?.stateChange.length).toEqual(1);
+  expect(events.get("2026-05-03")?.stateChange.length).toEqual(1);
 });
 
-Deno.test("getMinDate — empty list returns today in tz", () => {
+test("getMinDate — empty list returns today in tz", () => {
   const min = getMinDate([], "America/New_York");
   // Should be a YYYY-MM-DD string
-  assertEquals(/^\d{4}-\d{2}-\d{2}$/.test(min), true);
+  expect(/^\d{4}-\d{2}-\d{2}$/.test(min)).toEqual(true);
 });
 
-Deno.test("getMinDate — finds earliest effective start date", () => {
+test("getMinDate — finds earliest effective start date", () => {
   const tasks = [
     makeTask({ id: "a", dueDate: "2026-05-04" }),
     makeTask({ id: "b", dueDate: "2026-03-01" }),
     makeTask({ id: "c", dueDate: "2026-04-15" }),
   ];
-  assertEquals(getMinDate(tasks, "America/New_York"), "2026-03-01");
+  expect(getMinDate(tasks, "America/New_York")).toEqual("2026-03-01");
 });
 
-Deno.test("getMinDate — uses created (in tz) when no due date", () => {
+test("getMinDate — uses created (in tz) when no due date", () => {
   // 03:00 UTC = May 3 NY
   const tasks = [
     makeTask({
@@ -110,5 +110,5 @@ Deno.test("getMinDate — uses created (in tz) when no due date", () => {
     }),
     makeTask({ id: "b", dueDate: "2026-05-04" }),
   ];
-  assertEquals(getMinDate(tasks, "America/New_York"), "2026-05-03");
+  expect(getMinDate(tasks, "America/New_York")).toEqual("2026-05-03");
 });
