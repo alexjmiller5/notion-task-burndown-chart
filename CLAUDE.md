@@ -48,7 +48,7 @@ Requirements: Bun, 1Password CLI (`op`), wrangler (via Bun).
 Pure TypeScript modules shared between server and client:
 
 - `parser.ts` — `parseTasks(pages): ParsedData` parses Notion pages into **unfiltered** Task objects + metadata. No filtering; callers call `applyBaseFilters` themselves.
-- `merge.ts` — `mergeParsedData` (id-keyed merge of incremental result into cached tasks); `getIncrementalSince` (threshold from `max(lastEditedTime)` across cached tasks).
+- `merge.ts` — `mergeParsedData` (id-keyed merge of incremental result into cached tasks); `getIncrementalSince` (threshold = earlier of `max(created)` and `max(lastEditedTime)` across cached tasks).
 - `history.ts` — Parses "Tag & Date History" ledger field (format: `[YYYY-MM-DD HH:MM] --- Tags: [...], Due Date: ...`)
 - `filters.ts` — `applyBaseFilters` (cancelled/useless, called client-side after loading cache) and `applyViewFilters` (legacy cutoff, incomplete, project tasks — also client-side toggles).
 - `timezone.ts` — `toLocalDateStr`, `addDays` (DST-safe via UTC arithmetic), `getCurrentDateStr`, plus the curated `TIMEZONES` list and `DEFAULT_TIMEZONE` (`America/New_York`).
@@ -116,7 +116,7 @@ Coverage focuses on pure TS modules in `src/lib/data/` and `src/lib/server/` —
 
 **Deletions are invisible to incremental fetch**: Notion's data source query API (version `2026-03-11`) silently excludes trashed/archived pages. The only way to detect a deletion is a full refresh that replaces the cache wholesale. The chunked Full Sync loop exists partly for this reason.
 
-**Timezone awareness**: The user picks a timezone from a curated list (default `America/New_York`). It is _not_ persisted across reloads. The selected timezone affects: `created_time` → date bucketing, range presets ("today" anchor), the slider's right edge, and `totalActive`. It does _not_ affect Notion `dueDate`/`completed` (already date-only strings) or history ledger dates (date-only strings written in the user's local TZ at edit time).
+**Timezone awareness**: The user picks a timezone from a curated list (default `America/New_York`). It _is_ persisted across reloads (localStorage via `preferences.ts`, along with groupBy, toggles, and preset — presets re-anchor to today on restore). The selected timezone affects: `created_time` → date bucketing, range presets ("today" anchor), the slider's right edge, and `totalActive`. It does _not_ affect Notion `dueDate`/`completed` (already date-only strings) or history ledger dates (date-only strings written in the user's local TZ at edit time).
 
 **DST safety**: `addDays` in `timezone.ts` uses `Date.UTC` + `setUTCDate` so calendar-day arithmetic never lands on the wrong day across DST transitions, regardless of host TZ.
 

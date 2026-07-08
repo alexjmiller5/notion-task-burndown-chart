@@ -3,6 +3,8 @@ import type { RequestHandler } from './$types.js';
 import { CACHE_KEY } from '$lib/server/cache.js';
 
 export const PUT: RequestHandler = async ({ request, platform }) => {
+	// Buffered, not streamed: the sanity gate needs the text, and decoding
+	// ~1.1 MB of UTF-8 is ~1 ms — no JSON.parse happens here either way.
 	const text = await request.text();
 	// ponytail: cheap sanity gate, not schema validation — CF Access already
 	// restricts callers to Alex; this only guards against a truncated body.
