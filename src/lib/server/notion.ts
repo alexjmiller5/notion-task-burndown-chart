@@ -62,3 +62,39 @@ export async function fetchIncrementalPages(
   });
 }
 
+export interface PageChunk {
+  pages: NotionPage[];
+  nextCursor: string | null;
+}
+
+/**
+ * Fetch up to maxRequests pagination steps of the full-database query.
+ * ponytail: 3 requests/chunk keeps each Worker invocation ~4-6ms CPU and 3
+ * subrequests — the client loops with nextCursor until null.
+ */
+export async function fetchPageChunk(
+  apiKey: string,
+  cursor: string | null,
+  maxRequests = 3,
+): Promise<PageChunk> {
+  const pages: NotionPage[] = [];
+  let startCursor = cursor ?? undefined;
+  for (let i = 0; i < maxRequests; i++) {
+    const body: Record<string, unknown> = {};
+    if (startCursor) body.start_cursor = startCursor;
+    const response = await fetch(QUERY_URL, {
+      method: "POST",
+      headers: apiHeaders(apiKey),
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      throw new Error(`Notion API error ${response.status}: ${await response.text()}`);
+    }
+    const data = await response.json();
+    pages.push(...(data.results as NotionPage[]));
+    startCursor = data.next_cursor ?? undefined;
+    if (!(data.has_more ?? false)) return { pages, nextCursor: null };
+  }
+  return { pages, nextCursor: startCursor ?? null };
+}
+
