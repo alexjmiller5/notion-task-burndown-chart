@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { Task, DayCount, GroupBy } from "$lib/types.js";
-  import { applyViewFilters } from "$lib/data/filters.js";
+  import { applyBaseFilters, applyViewFilters } from "$lib/data/filters.js";
+  import { mergeParsedData } from "$lib/data/merge.js";
+  import type { ParsedData, TaskCache } from "$lib/types.js";
   import { buildEventsMap, getMinDate } from "$lib/data/events.js";
   import { calculateDailyCounts } from "$lib/data/calculator.js";
   import {
@@ -14,9 +16,6 @@
   import { loadPreferences, savePreferences } from "$lib/data/preferences.js";
   import TaskChart from "../components/TaskChart.svelte";
   import RangeSlider from "../components/RangeSlider.svelte";
-
-  // svelte-ignore state_referenced_locally
-  const { data } = $props();
 
   const DEFAULT_TAGS = [
     "Learning", "Chore", "Work", "Westport",
@@ -31,11 +30,11 @@
 
   const SLIDER_MIN = "2025-01-10";
 
-  let allTasks: Task[] = $state(data.tasks);
-  let allTags: string[] = $state(data.allTags);
-  let allPriorities: string[] = $state(data.allPriorities ?? ["High", "Medium", "Low", "(No Priority)"]);
-  let allProjects: string[] = $state(data.allProjects ?? ["(No Project)"]);
-  let tagColors: Record<string, string> = $state(data.tagColors ?? {});
+  let allTasks: Task[] = $state([]);
+  let allTags: string[] = $state([]);
+  let allPriorities: string[] = $state(["High", "Medium", "Low", "(No Priority)"]);
+  let allProjects: string[] = $state(["(No Project)"]);
+  let tagColors: Record<string, string> = $state({});
 
   let timezone: string = $state(DEFAULT_TIMEZONE);
   const initial90D = getPresetRange("90D", DEFAULT_TIMEZONE);
@@ -57,13 +56,15 @@
     return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
   });
 
+  let baseTasks = $derived(applyBaseFilters(allTasks));
+
   let isFullSyncing: boolean = $state(false);
   let isRefreshingToday: boolean = $state(false);
 
   let refreshError: string | null = $state(null);
 
   let filteredTasks = $derived(
-    applyViewFilters(allTasks, {
+    applyViewFilters(baseTasks, {
       includeLegacy: false,
       includeIncomplete: true,
       includeProjectTasks,
@@ -92,7 +93,7 @@
   });
 
   let hiddenByDefault = $derived(
-    groupBy === "project" ? ["(No Project)"] : [],
+    (groupBy as GroupBy) === "project" ? ["(No Project)"] : [],
   );
 
   let eventsMap = $derived(buildEventsMap(filteredTasks, timezone));
@@ -120,7 +121,7 @@
   });
 
   let taskCount = $derived(filteredTasks.length);
-  let projectCount = $derived(allTasks.filter((t) => t.hasProject).length);
+  let projectCount = $derived(baseTasks.filter((t) => t.hasProject).length);
 
   const PRIORITY_COLORS: Record<string, string> = {
     High: "red",
@@ -176,20 +177,25 @@
     });
   });
 
-  async function postRefresh(url: string) {
+  let syncProgress: number = $state(0);
+
+  function applyParsed(d: ParsedData) {
+    allTasks = d.tasks;
+    allTags = d.allTags;
+    allPriorities = d.allPriorities;
+    allProjects = d.allProjects;
+    tagColors = d.tagColors;
+  }
+
+  async function loadTasks() {
     refreshError = null;
     try {
-      const res = await fetch(url, { method: "POST" });
-      if (res.ok) {
-        const fresh = await res.json();
-        allTasks = fresh.tasks;
-        allTags = fresh.allTags;
-        if (fresh.allPriorities) allPriorities = fresh.allPriorities;
-        if (fresh.allProjects) allProjects = fresh.allProjects;
-        if (fresh.tagColors) tagColors = fresh.tagColors;
-      } else {
+      const res = await fetch("/api/tasks");
+      if (!res.ok) {
         refreshError = `${res.status}`;
+        return;
       }
+      applyParsed((await res.json()) as TaskCache);
     } catch (e) {
       refreshError = (e as Error).message;
     }
@@ -197,15 +203,64 @@
 
   async function fullSync() {
     isFullSyncing = true;
-    try { await postRefresh("/api/refresh?full=1"); }
-    finally { isFullSyncing = false; }
+    refreshError = null;
+    syncProgress = 0;
+    try {
+      let merged: ParsedData | null = null;
+      let cursor: string | null = null;
+      do {
+        const qs: string = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+        const res = await fetch(`/api/refresh-chunk${qs}`, { method: "POST" });
+        if (!res.ok) {
+          refreshError = `${res.status}`;
+          return;
+        }
+        const { nextCursor, ...chunk } = (await res.json()) as ParsedData & {
+          nextCursor: string | null;
+        };
+        merged = merged ? mergeParsedData(merged, chunk) : chunk;
+        cursor = nextCursor;
+        syncProgress += 1;
+      } while (cursor);
+      const cacheData: TaskCache = {
+        lastFullRefreshAt: new Date().toISOString(),
+        ...merged!,
+      };
+      const put = await fetch("/api/cache", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cacheData),
+      });
+      if (!put.ok) {
+        refreshError = `${put.status}`;
+        return;
+      }
+      applyParsed(cacheData);
+    } catch (e) {
+      refreshError = (e as Error).message;
+    } finally {
+      isFullSyncing = false;
+    }
   }
 
   async function refreshToday() {
     isRefreshingToday = true;
+    refreshError = null;
     try {
       const since = encodeURIComponent(getStartOfDayUTC(timezone));
-      await postRefresh(`/api/refresh?since=${since}`);
+      const res = await fetch(`/api/refresh?since=${since}`, { method: "POST" });
+      if (!res.ok) {
+        refreshError = `${res.status}`;
+        return;
+      }
+      const meta = (await res.json()) as { needsFull: boolean };
+      if (meta.needsFull) {
+        await fullSync(); // empty/stale cache bootstraps itself via the chunk loop
+      } else {
+        await loadTasks();
+      }
+    } catch (e) {
+      refreshError = (e as Error).message;
     } finally {
       isRefreshingToday = false;
     }
@@ -239,6 +294,7 @@
     }
     prefsLoaded = true;
 
+    await loadTasks(); // paint from R2 cache immediately, then sync today
     // ponytail: page-load sync is a Today sync (since=start of today), never
     // an auto-full — full syncs are manual via the Full Sync button
     await refreshToday();
@@ -277,7 +333,7 @@
         <div class="hidden sm:flex items-center gap-2 text-red-400 font-[var(--font-mono)] text-xs mt-2">
           <span>Sync failed</span>
         </div>
-      {:else if allTasks.length > 0}
+      {:else if baseTasks.length > 0}
         <div class="hidden sm:flex items-center gap-2 text-muted font-[var(--font-mono)] text-xs uppercase tracking-wider mt-2">
           <div class="glow-dot"></div>
           <span>Live</span>
@@ -287,7 +343,7 @@
   </header>
 
   <!-- Stats — under header on desktop, at the bottom on mobile -->
-  {#if allTasks.length > 0}
+  {#if baseTasks.length > 0}
     <section class="order-3 sm:order-2 grid grid-cols-2 gap-x-6 gap-y-4 sm:flex sm:items-center sm:gap-6 sm:-mt-4 sm:pt-6 sm:border-t sm:border-border-subtle">
       <div>
         <span class="font-[var(--font-mono)] text-xl sm:text-2xl md:text-3xl font-medium text-white">{totalActive}</span>
@@ -453,7 +509,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/>
           </svg>
           <span class="text-xs font-[var(--font-mono)] uppercase tracking-wider text-muted">
-            {isFullSyncing ? "Syncing" : "Full"}
+            {isFullSyncing ? `Sync ${syncProgress}` : "Full"}
           </span>
         </button>
 
@@ -519,7 +575,7 @@
     </div>
 
     <!-- Chart — top on mobile, bottom on desktop -->
-    {#if allTasks.length === 0}
+    {#if baseTasks.length === 0}
       <div class="order-1 sm:order-3 h-[var(--chart-height-mobile)] sm:h-[var(--chart-height-tablet)] flex items-center justify-center">
         <div class="text-center">
           <div class="loader mx-auto"></div>
