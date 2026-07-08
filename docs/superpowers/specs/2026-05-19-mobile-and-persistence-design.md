@@ -6,12 +6,14 @@
 ## Goals & non-goals
 
 **Goals**
+
 1. Phone-sized viewports (`< 640px`) render without horizontal overflow, without the four header stats squashing together, and without the controls bar collapsing into a ragged multi-line block.
 2. Touch targets ≥ 44px (iOS HIG minimum) on the range slider handles, pill buttons, and toggle switches.
 3. All user-controlled inputs persist across visits, with preset-driven date ranges re-anchored to "today" on each load.
 4. Inline hex/rgba values across the codebase replaced with `@theme` token references — leverages the existing token block in `src/app.css`.
 
 **Non-goals**
+
 - Palette/branding changes. Same colors, same vibe.
 - Mobile-specific routes, drawer/sheet UI patterns, or breakpoint-conditional component swaps.
 - Refactoring `+page.svelte` into smaller components (that's a separate concern).
@@ -53,6 +55,7 @@ Extend the existing `@theme` block in `src/app.css`. Tailwind v4 emits utility c
 ```
 
 Files touched for hex→token sweep:
+
 - `src/routes/+page.svelte` (heaviest)
 - `src/components/RangeSlider.svelte`
 - `src/components/TaskChart.svelte` (audit pass; likely small)
@@ -65,15 +68,18 @@ Dynamic inline `style=""` blocks (toggle thumb position, slider glow intensity) 
 Default Tailwind breakpoints. Targeted changes per region:
 
 **Header**
+
 - Title: `text-2xl sm:text-3xl md:text-4xl lg:text-5xl` (was `text-3xl sm:text-4xl md:text-5xl`).
 - The "Live"/"Syncing"/"Sync failed" badge is hidden on `< sm` (the `glow-dot` is decorative; users on mobile don't need a status pill).
 
 **Stats row**
+
 - `< sm`: 2-column grid via `grid grid-cols-2 gap-x-6 gap-y-4`, no vertical separators.
 - `≥ sm`: current flex row with vertical separators.
 - Numbers shrink: `text-xl sm:text-2xl md:text-3xl` (was `text-2xl sm:text-3xl`).
 
 **Controls bar**
+
 - `< sm`: split into two `flex-wrap` rows.
   - Row 1: range-presets pill bar + group-by pill bar (the "view shape" controls).
   - Row 2: timezone select + refresh today + full sync + legacy/projects toggles.
@@ -81,14 +87,17 @@ Default Tailwind breakpoints. Targeted changes per region:
 - Button padding bumped to `py-2.5 sm:py-1.5` so the pill buttons meet 44px on touch.
 
 **Chart**
+
 - Container height: `h-[var(--chart-height-mobile)] sm:h-[var(--chart-height-tablet)] lg:h-[var(--chart-height-desktop)]` — 360 / 500 / 550.
 
 **Range slider** (`RangeSlider.svelte`)
+
 - Track height bumped from `h-10` to `h-12` on `< sm`.
 - Handle sizes scale up: idle/hover/drag sizes become `20 / 24 / 28` on `< sm` (were `14 / 18 / 20`), enlarging the effective tap area to ≥ 44px when combined with the track.
 - Detection: a `$state` boolean set via `matchMedia("(pointer: coarse)")` toggled at mount + on `change`. Touch devices get the larger sizes regardless of viewport.
 
 **Background gradient blob**
+
 - The fixed radial gradient (`w-[600px] h-[400px]`) is hidden on `< sm` — it overflows on phones and adds nothing functionally.
 
 ### Persistence
@@ -97,14 +106,14 @@ New module: `src/lib/data/preferences.ts`.
 
 ```ts
 interface StoredPreferences {
-  version: 1;
-  timezone: string;
-  groupBy: GroupBy;
-  showLegacyTags: boolean;
-  includeProjectTasks: boolean;
-  preset: PresetLabel | null;  // null when slider is manually dragged
-  dateStart?: string;          // only set when preset === null
-  dateEnd?: string;
+	version: 1;
+	timezone: string;
+	groupBy: GroupBy;
+	showLegacyTags: boolean;
+	includeProjectTasks: boolean;
+	preset: PresetLabel | null; // null when slider is manually dragged
+	dateStart?: string; // only set when preset === null
+	dateEnd?: string;
 }
 
 export function loadPreferences(): Partial<StoredPreferences> | null;
@@ -121,13 +130,14 @@ export function savePreferences(prefs: StoredPreferences): void;
 1. `$state` initializers use defaults (NY tz, "90D" preset, etc.) — same as today.
 2. In `onMount`, call `loadPreferences()`. If present:
    - Restore `timezone`, `groupBy`, `showLegacyTags`, `includeProjectTasks` directly.
-   - If `preset !== null`: set `activePreset = stored.preset` and recompute `dateStart`/`dateEnd` via `getPresetRange(preset, timezone)` against *current* `new Date()` — so "90D" stays "last 90 days".
+   - If `preset !== null`: set `activePreset = stored.preset` and recompute `dateStart`/`dateEnd` via `getPresetRange(preset, timezone)` against _current_ `new Date()` — so "90D" stays "last 90 days".
    - If `preset === null`: restore `dateStart`/`dateEnd` from storage.
 3. After load, an `$effect` watches all those state vars and calls `savePreferences()` on every change. Effects don't run during SSR, so there's no clobber on first server render.
 
 ### Testing
 
 `src/lib/data/preferences.test.ts`:
+
 - `loadPreferences` returns null when storage is empty.
 - `loadPreferences` returns null when JSON is malformed.
 - `loadPreferences` returns null when `version !== 1`.

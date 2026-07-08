@@ -28,23 +28,23 @@ the cache is 16.9 MB / 4,302 raw pages; parse+stringify costs ~78 ms CPU
 (vs the 10 ms free-tier cap → error 1102 on every request), and a full
 refresh is 44 subrequests (cap 50). Parsed tasks weigh only 1.1 MB (15x
 smaller). v2 therefore stores parsed tasks, streams them to the client,
-and chunks the full refresh through the browser. Refresh *semantics*
+and chunks the full refresh through the browser. Refresh _semantics_
 (Today-sync on mount, manual Full Sync, 24h staleness rule) are preserved;
 Full Sync becomes a ~20–30s progress loop instead of one blocking request.
 
 ## Decisions (settled during brainstorming)
 
-| Decision | Choice |
-| --- | --- |
-| Hostname | `task-burndown.<subdomain>.workers.dev` (no custom domain) |
-| Access login | Cloudflare identity provider (sign in with Cloudflare account — zero-setup default IdP, verified working on Alex's account) |
-| Access session | 1 month app session duration |
-| Data layer | R2, single JSON object (cache is read/written wholesale — no D1/KV) |
-| Refresh semantics | Unchanged (Today-sync on mount, manual Full Sync, 24h staleness rule) |
-| Cache contents | Parsed unfiltered `Task[]` (1.1 MB), NOT raw Notion pages (16.9 MB) — free-tier CPU forces this |
-| Page load | Worker streams the R2 object body straight through (~0 CPU); client parses + applies base filters |
-| Full refresh | Client-driven chunked loop (~3 Notion pages per Worker request), then client PUTs the assembled cache back; stays on free tier, erases the subrequest ceiling |
-| OCI/NixOS stack | Torn down (`terraform destroy` verified: state serial 15, 0 resources) — delete from repo |
+| Decision          | Choice                                                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hostname          | `task-burndown.<subdomain>.workers.dev` (no custom domain)                                                                                                    |
+| Access login      | Cloudflare identity provider (sign in with Cloudflare account — zero-setup default IdP, verified working on Alex's account)                                   |
+| Access session    | 1 month app session duration                                                                                                                                  |
+| Data layer        | R2, single JSON object (cache is read/written wholesale — no D1/KV)                                                                                           |
+| Refresh semantics | Unchanged (Today-sync on mount, manual Full Sync, 24h staleness rule)                                                                                         |
+| Cache contents    | Parsed unfiltered `Task[]` (1.1 MB), NOT raw Notion pages (16.9 MB) — free-tier CPU forces this                                                               |
+| Page load         | Worker streams the R2 object body straight through (~0 CPU); client parses + applies base filters                                                             |
+| Full refresh      | Client-driven chunked loop (~3 Notion pages per Worker request), then client PUTs the assembled cache back; stays on free tier, erases the subrequest ceiling |
+| OCI/NixOS stack   | Torn down (`terraform destroy` verified: state serial 15, 0 resources) — delete from repo                                                                     |
 
 ## Architecture
 
@@ -65,7 +65,7 @@ confined to `src/lib/server/`, routes' load/endpoint plumbing, and config.
 - New bucket `task-burndown-cache`, bound as `CACHE` in `wrangler.jsonc`.
 - The cached object `task-cache.json` stores **parsed, unfiltered tasks**:
   `{ lastFullRefreshAt: string | null, tasks: Task[], tagColors, allTags,
-  allPriorities, allProjects }`. Base filters (cancelled/useless) move
+allPriorities, allProjects }`. Base filters (cancelled/useless) move
   client-side — they are already pure shared functions in
   `src/lib/data/filters.ts`. `Task` gains a `lastEditedTime` field so the
   incremental threshold can be computed from tasks instead of raw pages.
@@ -169,11 +169,11 @@ Only the genuinely un-codifiable:
 
 ## Risks (accepted)
 
-| Risk | Ceiling | Fallback |
-| --- | --- | --- |
-| Incremental refresh CPU (parse + stringify 1.1 MB cache ≈ 5–7 ms) sits near the 10 ms cap | Cache growing ~2x (≈ 7,500 tasks) | Shrink stored fields, or $5 paid tier |
-| Large incremental (e.g. after weeks away, hundreds of changed pages) could exceed chunk-free CPU budget | Rare in practice | Client falls back to the chunked full-sync loop on 1102 |
-| Full-sync loop leaves a stale cache if abandoned mid-loop | Cache only replaced by the final PUT — partial loops are harmless (no partial writes) | — |
+| Risk                                                                                                    | Ceiling                                                                               | Fallback                                                |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Incremental refresh CPU (parse + stringify 1.1 MB cache ≈ 5–7 ms) sits near the 10 ms cap               | Cache growing ~2x (≈ 7,500 tasks)                                                     | Shrink stored fields, or $5 paid tier                   |
+| Large incremental (e.g. after weeks away, hundreds of changed pages) could exceed chunk-free CPU budget | Rare in practice                                                                      | Client falls back to the chunked full-sync loop on 1102 |
+| Full-sync loop leaves a stale cache if abandoned mid-loop                                               | Cache only replaced by the final PUT — partial loops are harmless (no partial writes) | —                                                       |
 
 ## Testing the migration
 
