@@ -1,6 +1,5 @@
 import type { NotionPage, Task, ParsedData } from "$lib/types.js";
 import { parseHistoryLedger } from "./history.js";
-import { applyBaseFilters } from "./filters.js";
 
 function extractProp(
   props: Record<string, any>,
@@ -24,6 +23,8 @@ function extractMultiSelect(
 function extractRichText(props: Record<string, any>, name: string): string {
   return props[name]?.rich_text?.[0]?.plain_text || "";
 }
+
+export const PRIORITY_ORDER = ["High", "Medium", "Low", "(No Priority)"];
 
 /**
  * Extract project name from the "Project Title" rollup field.
@@ -62,6 +63,7 @@ function parseTask(page: NotionPage): Task {
     projectName,
     history: parseHistoryLedger(historyText),
     hasProject: projectName !== "(No Project)",
+    lastEditedTime: page.last_edited_time,
   };
 }
 
@@ -88,7 +90,7 @@ export function parseTasks(pages: NotionPage[]): ParsedData {
     return task;
   });
 
-  const tasks = applyBaseFilters(allParsed);
+  const tasks = allParsed;
 
   allTagsSet.add("(Untagged)");
   tagColors["(Untagged)"] = "default";
@@ -96,7 +98,7 @@ export function parseTasks(pages: NotionPage[]): ParsedData {
   return {
     tasks,
     allTags: Array.from(allTagsSet).sort(),
-    allPriorities: ["High", "Medium", "Low", "(No Priority)"].filter((p) =>
+    allPriorities: PRIORITY_ORDER.filter((p) =>
       allPrioritiesSet.has(p),
     ),
     allProjects: Array.from(allProjectsSet).sort(),
