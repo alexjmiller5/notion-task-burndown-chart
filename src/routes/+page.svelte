@@ -322,8 +322,10 @@
 	style="background: radial-gradient(ellipse, var(--color-bitcoin-glow-soft) 0%, transparent 70%); filter: blur(80px);"
 ></div>
 
+<!-- Mobile: exactly one viewport tall, no scrolling — the chart card flexes to fit.
+     Desktop (sm+): normal document flow, unchanged. -->
 <div
-	class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12 flex flex-col gap-6 sm:gap-10"
+	class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12 flex flex-col gap-6 sm:gap-10 h-dvh overflow-hidden sm:h-auto sm:overflow-visible"
 >
 	<!-- Header — title at the top always -->
 	<header class="order-1">
@@ -410,7 +412,7 @@
 
 	<!-- Chart card — between header and stats on mobile, after stats on desktop -->
 	<div
-		class="order-2 sm:order-3 rounded-card border border-border-default bg-surface p-2.5 sm:p-6 flex flex-col"
+		class="order-2 sm:order-3 rounded-card border border-border-default bg-surface p-2.5 sm:p-6 flex flex-col flex-1 min-h-0 sm:flex-none"
 		style="box-shadow: 0 0 60px -20px var(--color-bitcoin-glow-soft);"
 	>
 		<!-- Controls — two rows on mobile, one row on desktop. Order-3 on mobile so chart shows first. -->
@@ -677,7 +679,7 @@
 		<!-- Chart — top on mobile, bottom on desktop -->
 		{#if baseTasks.length === 0}
 			<div
-				class="order-1 sm:order-3 h-[var(--chart-height-mobile)] sm:h-[var(--chart-height-tablet)] flex items-center justify-center"
+				class="order-1 sm:order-3 flex-1 min-h-0 sm:flex-none sm:h-[var(--chart-height-tablet)] flex items-center justify-center"
 			>
 				<div class="text-center">
 					<div class="loader mx-auto"></div>
@@ -686,7 +688,7 @@
 			</div>
 		{:else}
 			<div
-				class="order-1 sm:order-3 h-[var(--chart-height-mobile)] sm:h-[var(--chart-height-tablet)] lg:h-[var(--chart-height-desktop)]"
+				class="order-1 sm:order-3 flex-1 min-h-0 sm:flex-none sm:h-[var(--chart-height-tablet)] lg:h-[var(--chart-height-desktop)]"
 			>
 				<TaskChart
 					{dailyCounts}
