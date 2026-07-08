@@ -1,36 +1,9 @@
-let cachedKey: string | null = null;
-
-export async function getNotionApiKey(): Promise<string> {
-  if (cachedKey) return cachedKey;
-
-  // Try environment variable first (for deployment)
-  const envKey = Deno.env.get("NOTION_API_KEY");
-  if (envKey) {
-    cachedKey = envKey;
-    return envKey;
-  }
-
-  // Fall back to 1Password CLI
-  const cmd = new Deno.Command("op", {
-    args: [
-      "item",
-      "get",
-      "Notion Task Burndown Chart Notion Internal Integration Secret",
-      "--fields",
-      "credential",
-      "--reveal",
-    ],
-    stdout: "piped",
-    stderr: "piped",
-  });
-
-  const result = await cmd.output();
-
-  if (!result.success) {
-    const stderr = new TextDecoder().decode(result.stderr);
-    throw new Error(`1Password CLI failed: ${stderr}`);
-  }
-
-  cachedKey = new TextDecoder().decode(result.stdout).trim();
-  return cachedKey;
+/** Prod: Worker secret on platform.env. Dev: process env injected by `op run`. */
+export function getNotionApiKey(env: { NOTION_API_KEY?: string }): string {
+  const key =
+    env.NOTION_API_KEY ??
+    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
+      ?.NOTION_API_KEY;
+  if (!key) throw new Error("NOTION_API_KEY is not set (Worker secret or op run env)");
+  return key;
 }
