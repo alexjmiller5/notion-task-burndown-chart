@@ -1,4 +1,4 @@
-import { assertEquals } from "@std/assert";
+import { expect, test } from "vitest";
 import {
   loadPreferences,
   savePreferences,
@@ -24,13 +24,13 @@ function installStubStorage(): { get: (k: string) => string | null; setItems: Re
       return Object.keys(setItems).length;
     },
   };
-  // deno-lint-ignore no-explicit-any
+  // ponytail: cast needed — vitest runs in jsdom/node where globalThis.localStorage may be defined
   (globalThis as any).localStorage = stub;
   return { get: (k) => stub.getItem(k), setItems };
 }
 
 function uninstallStubStorage() {
-  // deno-lint-ignore no-explicit-any
+  // ponytail: cast needed — same reason as above
   delete (globalThis as any).localStorage;
 }
 
@@ -46,57 +46,57 @@ function validPrefs(overrides: Partial<StoredPreferences> = {}): StoredPreferenc
   };
 }
 
-Deno.test("loadPreferences — returns null when storage empty", () => {
+test("loadPreferences — returns null when storage empty", () => {
   installStubStorage();
   try {
-    assertEquals(loadPreferences(), null);
+    expect(loadPreferences()).toEqual(null);
   } finally {
     uninstallStubStorage();
   }
 });
 
-Deno.test("loadPreferences — returns null when JSON is malformed", () => {
+test("loadPreferences — returns null when JSON is malformed", () => {
   const { setItems } = installStubStorage();
   setItems[STORAGE_KEY] = "{not json";
   try {
-    assertEquals(loadPreferences(), null);
+    expect(loadPreferences()).toEqual(null);
   } finally {
     uninstallStubStorage();
   }
 });
 
-Deno.test("loadPreferences — returns null when version is not 1", () => {
+test("loadPreferences — returns null when version is not 1", () => {
   const { setItems } = installStubStorage();
   setItems[STORAGE_KEY] = JSON.stringify({ ...validPrefs(), version: 2 });
   try {
-    assertEquals(loadPreferences(), null);
+    expect(loadPreferences()).toEqual(null);
   } finally {
     uninstallStubStorage();
   }
 });
 
-Deno.test("loadPreferences — returns null when version field missing", () => {
+test("loadPreferences — returns null when version field missing", () => {
   const { setItems } = installStubStorage();
   setItems[STORAGE_KEY] = JSON.stringify({ timezone: "UTC", groupBy: "tag" });
   try {
-    assertEquals(loadPreferences(), null);
+    expect(loadPreferences()).toEqual(null);
   } finally {
     uninstallStubStorage();
   }
 });
 
-Deno.test("loadPreferences — round-trips preset-driven payload", () => {
+test("loadPreferences — round-trips preset-driven payload", () => {
   installStubStorage();
   try {
     const prefs = validPrefs({ preset: "30D", groupBy: "priority" });
     savePreferences(prefs);
-    assertEquals(loadPreferences(), prefs);
+    expect(loadPreferences()).toEqual(prefs);
   } finally {
     uninstallStubStorage();
   }
 });
 
-Deno.test("loadPreferences — round-trips slider-drag payload with explicit dates", () => {
+test("loadPreferences — round-trips slider-drag payload with explicit dates", () => {
   installStubStorage();
   try {
     const prefs = validPrefs({
@@ -105,50 +105,49 @@ Deno.test("loadPreferences — round-trips slider-drag payload with explicit dat
       dateEnd: "2026-05-15",
     });
     savePreferences(prefs);
-    assertEquals(loadPreferences(), prefs);
+    expect(loadPreferences()).toEqual(prefs);
   } finally {
     uninstallStubStorage();
   }
 });
 
-Deno.test("savePreferences — writes under the expected storage key", () => {
+test("savePreferences — writes under the expected storage key", () => {
   const { get } = installStubStorage();
   try {
     savePreferences(validPrefs());
     const raw = get(STORAGE_KEY);
-    assertEquals(raw !== null, true);
+    expect(raw !== null).toEqual(true);
     const parsed = JSON.parse(raw!);
-    assertEquals(parsed.version, 1);
-    assertEquals(parsed.timezone, "America/New_York");
+    expect(parsed.version).toEqual(1);
+    expect(parsed.timezone).toEqual("America/New_York");
   } finally {
     uninstallStubStorage();
   }
 });
 
-Deno.test("savePreferences — overwrites previous value", () => {
+test("savePreferences — overwrites previous value", () => {
   installStubStorage();
   try {
     savePreferences(validPrefs({ groupBy: "tag" }));
     savePreferences(validPrefs({ groupBy: "project" }));
-    assertEquals(loadPreferences()?.groupBy, "project");
+    expect(loadPreferences()?.groupBy).toEqual("project");
   } finally {
     uninstallStubStorage();
   }
 });
 
-Deno.test("loadPreferences — no-op without localStorage (SSR safety)", () => {
+test("loadPreferences — no-op without localStorage (SSR safety)", () => {
   // Ensure no stub installed
   uninstallStubStorage();
-  assertEquals(loadPreferences(), null);
+  expect(loadPreferences()).toEqual(null);
 });
 
-Deno.test("savePreferences — no-op without localStorage (SSR safety)", () => {
+test("savePreferences — no-op without localStorage (SSR safety)", () => {
   uninstallStubStorage();
-  // Should not throw
-  savePreferences(validPrefs());
+  expect(() => savePreferences(validPrefs())).not.toThrow();
 });
 
-Deno.test("loadPreferences — invalid groupBy is rejected", () => {
+test("loadPreferences — invalid groupBy is rejected", () => {
   const { setItems } = installStubStorage();
   setItems[STORAGE_KEY] = JSON.stringify({
     version: 1,
@@ -159,13 +158,13 @@ Deno.test("loadPreferences — invalid groupBy is rejected", () => {
     preset: null,
   });
   try {
-    assertEquals(loadPreferences(), null);
+    expect(loadPreferences()).toEqual(null);
   } finally {
     uninstallStubStorage();
   }
 });
 
-Deno.test("loadPreferences — invalid preset label is rejected", () => {
+test("loadPreferences — invalid preset label is rejected", () => {
   const { setItems } = installStubStorage();
   setItems[STORAGE_KEY] = JSON.stringify({
     version: 1,
@@ -176,7 +175,7 @@ Deno.test("loadPreferences — invalid preset label is rejected", () => {
     preset: "INVALID",
   });
   try {
-    assertEquals(loadPreferences(), null);
+    expect(loadPreferences()).toEqual(null);
   } finally {
     uninstallStubStorage();
   }
