@@ -25,7 +25,7 @@ Access in front, installable as an iOS homescreen app.
 ## Decisions (settled during brainstorming)
 
 | Decision | Choice |
-|---|---|
+| --- | --- |
 | Hostname | `task-burndown.<subdomain>.workers.dev` (no custom domain) |
 | Access login | Cloudflare identity provider (sign in with Cloudflare account — zero-setup default IdP, verified working on Alex's account) |
 | Access session | 1 month app session duration |
@@ -58,9 +58,11 @@ confined to `src/lib/server/`, routes' load/endpoint plumbing, and config.
 - `BURNDOWN_CACHE_PATH` env handling removed (meaningless with R2).
 - Local dev: the adapter's platform proxy provides miniflare R2, persisted
   under `.wrangler/state/`.
-- One-time migration: seed local and prod from the existing
-  `notion-cache.json` via `wrangler r2 object put` (documented command, run
-  once).
+- One-time bootstrap is codified as a `just setup` recipe (idempotent):
+  `wrangler r2 bucket create task-burndown-cache` + seeding local and prod
+  from the existing `notion-cache.json` via `wrangler r2 object put`. The
+  bucket binding itself is IaC in `wrangler.jsonc`; only creation needs this
+  one command.
 
 ### 3. Secrets
 
@@ -121,7 +123,7 @@ Only the genuinely un-codifiable:
 ## Risks (accepted, not engineered around)
 
 | Risk | Ceiling | Fallback |
-|---|---|---|
+| --- | --- | --- |
 | Workers free tier: 10ms CPU/request; parsing multi-MB cache JSON in the page load may exceed it | Test after migration | Stream the R2 object to the client and parse there (client already does the heavy chart math); or $5 paid tier |
 | 50 subrequests/invocation on free tier; full refresh ≈ 36 paginated Notion calls today | ~5,000 tasks | Chunked resume across requests, or paid tier (1,000 subrequests) |
 
