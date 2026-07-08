@@ -47,8 +47,8 @@ Pure TypeScript modules shared between server and client:
 ### Data Flow
 1. Page load → server reads `notion-cache.json` → parses tasks → returns to client
 2. Client renders chart immediately from cached data
-3. `onMount` fires background POST to `/api/refresh` (incremental unless cache is stale ≥ 24h)
-4. Refresh endpoint decides full vs incremental; on full, replaces cache wholesale and updates `lastFullRefreshAt`; on incremental, computes `min(max_created, max_last_edited)`, fetches changed pages, merges by id
+3. `onMount` fires a background "Today" sync — POST `/api/refresh?since=<start of today in selected tz>` (same as the Today button). Page load never triggers an auto-full refresh.
+4. Refresh endpoint: explicit `?since=` skips the full-refresh check (unless cache is empty); `?full=1` forces full; otherwise `shouldFullRefresh` decides. On full, replaces cache wholesale and updates `lastFullRefreshAt`; on incremental, fetches changed pages since the threshold and merges by id
 5. User can manually click "Full Sync" → calls `/api/refresh?full=1` → forces a full refresh (used to catch deletions, since trashed pages silently disappear from Notion's data source query)
 6. Client updates chart reactively via Svelte 5 `$derived` pipeline
 
@@ -62,7 +62,7 @@ UI controls (range presets, group-by selector, timezone dropdown, Full Sync butt
 
 **Incremental fetching**: Instead of fetching all 3600+ pages, the refresh uses the earlier of `max(created_time)` and `max(last_edited_time)` across cached pages as a threshold, then queries Notion with `last_edited_time >= threshold`. Fresh pages are merged by ID.
 
-**Deletions are invisible to incremental fetch**: Notion's data source query API (version `2026-03-11`) silently excludes trashed/archived pages and provides no way to query for them (no `in_trash` filter, no top-level `archived` param). The only way to detect a deletion is a full refresh that replaces the cache wholesale. The auto-full-after-24h policy and the manual "Full Sync" button exist for this reason.
+**Deletions are invisible to incremental fetch**: Notion's data source query API (version `2026-03-11`) silently excludes trashed/archived pages and provides no way to query for them (no `in_trash` filter, no top-level `archived` param). The only way to detect a deletion is a full refresh that replaces the cache wholesale. The manual "Full Sync" button exists for this reason (page load no longer auto-triggers a full refresh; the 24h staleness rule in `refresh-policy.ts` only applies to plain `/api/refresh` calls with no `since` param).
 
 **Timezone awareness**: The user picks a timezone from a curated list (default `America/New_York`). It is *not* persisted across reloads. The selected timezone affects: `created_time` → date bucketing, range presets ("today" anchor), the slider's right edge, and `totalActive`. It does *not* affect Notion `dueDate`/`completed` (already date-only strings) or history ledger dates (date-only strings written in the user's local TZ at edit time).
 

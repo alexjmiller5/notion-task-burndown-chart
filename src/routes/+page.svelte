@@ -60,7 +60,6 @@
   let isFullSyncing: boolean = $state(false);
   let isRefreshingToday: boolean = $state(false);
 
-  let isRefreshing: boolean = $state(false);
   let refreshError: string | null = $state(null);
 
   let filteredTasks = $derived(
@@ -240,25 +239,9 @@
     }
     prefsLoaded = true;
 
-    isRefreshing = true;
-    refreshError = null;
-    try {
-      const res = await fetch("/api/refresh", { method: "POST" });
-      if (res.ok) {
-        const fresh = await res.json();
-        allTasks = fresh.tasks;
-        allTags = fresh.allTags;
-        if (fresh.allPriorities) allPriorities = fresh.allPriorities;
-        if (fresh.allProjects) allProjects = fresh.allProjects;
-        if (fresh.tagColors) tagColors = fresh.tagColors;
-      } else {
-        refreshError = `${res.status}`;
-      }
-    } catch (e) {
-      refreshError = (e as Error).message;
-    } finally {
-      isRefreshing = false;
-    }
+    // ponytail: page-load sync is a Today sync (since=start of today), never
+    // an auto-full — full syncs are manual via the Full Sync button
+    await refreshToday();
   });
 </script>
 
@@ -285,7 +268,7 @@
         </p>
       </div>
 
-      {#if isRefreshing}
+      {#if isRefreshingToday}
         <div class="hidden sm:flex items-center gap-2 text-muted font-[var(--font-mono)] text-xs uppercase tracking-wider mt-2">
           <div class="loader"></div>
           <span>Syncing</span>
@@ -431,7 +414,7 @@
         <!-- Refresh Today button -->
         <button
           onclick={refreshToday}
-          disabled={isRefreshingToday || isFullSyncing || isRefreshing}
+          disabled={isRefreshingToday || isFullSyncing}
           class="flex items-center gap-2 px-3 py-2 rounded-control border border-border-default hover:border-bitcoin/40 hover:bg-bitcoin/5 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
           title="Fetch tasks edited today only (in selected timezone)"
         >
@@ -454,7 +437,7 @@
         <!-- Full Sync button -->
         <button
           onclick={fullSync}
-          disabled={isFullSyncing || isRefreshingToday || isRefreshing}
+          disabled={isFullSyncing || isRefreshingToday}
           class="flex items-center gap-2 px-3 py-2 rounded-control border border-border-default hover:border-bitcoin/40 hover:bg-bitcoin/5 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
           title="Re-fetch all pages from Notion (catches deletions)"
         >

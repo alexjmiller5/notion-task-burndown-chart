@@ -54,20 +54,43 @@ install-infect:
   #!/usr/bin/env bash
   set -euo pipefail
   IP=$(terraform output -raw instance_public_ip)
+
+  echo "==> Waiting for cloud-init to finish (max ~3 min)..."
+  ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 ubuntu@$IP 'sudo cloud-init status --wait' || true
+
+  echo "==> Forcing reliable DNS (some OCI Ubuntu VMs ship with broken systemd-resolved)..."
+  ssh ubuntu@$IP "sudo bash -c 'echo nameserver 8.8.8.8 > /etc/resolv.conf; echo nameserver 1.1.1.1 >> /etc/resolv.conf'"
+  if ! ssh ubuntu@$IP 'curl -fsS --max-time 15 -o /dev/null https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect'; then
+    echo "✗ Cannot reach raw.githubusercontent.com after DNS fix — aborting"
+    exit 1
+  fi
+  echo "✓ Connectivity verified"
+
   echo "==> Staging /etc/nixos/ on the instance..."
-  ssh -o StrictHostKeyChecking=accept-new ubuntu@$IP 'sudo mkdir -p /etc/nixos'
-  # Ship the deploy flake + secrets + scripts
-  rsync -av --exclude='.terraform' --exclude='terraform.tfstate*' --exclude='*.tfvars' \
+  ssh ubuntu@$IP 'sudo mkdir -p /etc/nixos'
+  rsync -av --exclude='.terraform' --exclude='.terraform.lock.hcl' --exclude='terraform.tfstate*' --exclude='*.tfvars' \
     ./ ubuntu@$IP:/tmp/burndown-deploy/
-  # Also ship the local burndown nix/ dir (because the flake input `path:../nix` resolves relative to deploy/)
-  rsync -av ../nix/ ubuntu@$IP:/tmp/burndown-nix/
+  rsync -av --exclude='result' ../nix/ ubuntu@$IP:/tmp/burndown-nix/
   ssh ubuntu@$IP 'sudo mv /tmp/burndown-deploy/* /etc/nixos/ && sudo mv /tmp/burndown-nix /etc/nixos/burndown-nix && sudo chown -R root:root /etc/nixos'
-  # Rewrite the path:../nix flake input to point at the staged burndown-nix copy
   ssh ubuntu@$IP 'sudo bash /etc/nixos/scripts/rewrite-flake-input.sh'
-  echo "==> Running nixos-infect..."
-  ssh ubuntu@$IP 'curl https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | sudo NIX_CHANNEL=nixos-unstable bash -x 2>&1 | tee /tmp/infect.log'
-  echo ""
-  echo "✓ System will reboot into NixOS. Wait ~3 min, then: just fetch-hardware-config && just update-nixos"
+
+  echo "==> Running nixos-infect (SSH will drop on reboot — that's expected)..."
+  ssh ubuntu@$IP "set -o pipefail; curl -fsSL https://raw.githubusercontent.com/elitak/nixos-infect/master/nixos-infect | sudo NIX_CHANNEL=nixos-unstable bash -x 2>&1 | sudo tee /tmp/infect.log | tail -20" \
+    || echo "(SSH disconnected — checking if reboot succeeded...)"
+
+  echo "==> Waiting for VM to come back as NixOS (max ~5 min)..."
+  sleep 60
+  for i in $(seq 1 30); do
+    if ssh -o ConnectTimeout=8 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes root@$IP 'cat /etc/os-release 2>/dev/null' 2>/dev/null | grep -q '^NAME="NixOS"'; then
+      echo "✓ VM is up and running NixOS"
+      echo "  Next: just fetch-hardware-config && just update-nixos && just set-secret"
+      exit 0
+    fi
+    sleep 10
+  done
+  echo "✗ VM did not come back as NixOS within 5 minutes."
+  echo "  Check OCI console serial output."
+  exit 1
 
 # Copy hardware-configuration.nix back from the VM after first install.
 fetch-hardware-config:
