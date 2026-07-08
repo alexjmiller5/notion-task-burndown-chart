@@ -1,74 +1,71 @@
-import type { NotionPage } from "$lib/types.js";
+import type { NotionPage } from '$lib/types.js';
 
-const DATA_SOURCE_ID = "77ef5074-aa23-468a-b5fb-2692e78184db";
+const DATA_SOURCE_ID = '77ef5074-aa23-468a-b5fb-2692e78184db';
 const QUERY_URL = `https://api.notion.com/v1/data_sources/${DATA_SOURCE_ID}/query`;
-const API_VERSION = "2026-03-11";
+const API_VERSION = '2026-03-11';
 
 function apiHeaders(apiKey: string): Record<string, string> {
-  return {
-    Authorization: `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-    "Notion-Version": API_VERSION,
-  };
+	return {
+		Authorization: `Bearer ${apiKey}`,
+		'Content-Type': 'application/json',
+		'Notion-Version': API_VERSION
+	};
 }
 
 async function fetchPaginated(
-  apiKey: string,
-  payload: Record<string, unknown> = {},
+	apiKey: string,
+	payload: Record<string, unknown> = {}
 ): Promise<NotionPage[]> {
-  const allPages: NotionPage[] = [];
-  let hasMore = true;
-  let startCursor: string | undefined;
+	const allPages: NotionPage[] = [];
+	let hasMore = true;
+	let startCursor: string | undefined;
 
-  while (hasMore) {
-    const body: Record<string, unknown> = { ...payload };
-    if (startCursor) body.start_cursor = startCursor;
+	while (hasMore) {
+		const body: Record<string, unknown> = { ...payload };
+		if (startCursor) body.start_cursor = startCursor;
 
-    const response = await fetch(QUERY_URL, {
-      method: "POST",
-      headers: apiHeaders(apiKey),
-      body: JSON.stringify(body),
-    });
+		const response = await fetch(QUERY_URL, {
+			method: 'POST',
+			headers: apiHeaders(apiKey),
+			body: JSON.stringify(body)
+		});
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`Notion API error ${response.status}: ${text}`);
-    }
+		if (!response.ok) {
+			const text = await response.text();
+			throw new Error(`Notion API error ${response.status}: ${text}`);
+		}
 
-    const data = (await response.json()) as {
-      results: NotionPage[];
-      has_more?: boolean;
-      next_cursor?: string | null;
-    };
-    allPages.push(...data.results);
-    hasMore = data.has_more ?? false;
-    startCursor = data.next_cursor ?? undefined;
-  }
+		const data = (await response.json()) as {
+			results: NotionPage[];
+			has_more?: boolean;
+			next_cursor?: string | null;
+		};
+		allPages.push(...data.results);
+		hasMore = data.has_more ?? false;
+		startCursor = data.next_cursor ?? undefined;
+	}
 
-  return allPages;
+	return allPages;
 }
 
 export async function fetchAllPages(apiKey: string): Promise<NotionPage[]> {
-  return fetchPaginated(apiKey);
+	return fetchPaginated(apiKey);
 }
 
-export async function fetchIncrementalPages(
-  apiKey: string,
-  since: string,
-): Promise<NotionPage[]> {
-  return fetchPaginated(apiKey, {
-    filter: {
-      property: "Last edited time",
-      last_edited_time: {
-        on_or_after: since,
-      },
-    },
-  });
+export async function fetchIncrementalPages(apiKey: string, since: string): Promise<NotionPage[]> {
+	return fetchPaginated(apiKey, {
+		filter: {
+			property: 'Last edited time',
+			last_edited_time: {
+				on_or_after: since
+			}
+		}
+	});
 }
 
 export interface PageChunk {
-  pages: NotionPage[];
-  nextCursor: string | null;
+	pages: NotionPage[];
+	nextCursor: string | null;
 }
 
 /**
@@ -77,32 +74,31 @@ export interface PageChunk {
  * subrequests — the client loops with nextCursor until null.
  */
 export async function fetchPageChunk(
-  apiKey: string,
-  cursor: string | null,
-  maxRequests = 3,
+	apiKey: string,
+	cursor: string | null,
+	maxRequests = 3
 ): Promise<PageChunk> {
-  const pages: NotionPage[] = [];
-  let startCursor = cursor ?? undefined;
-  for (let i = 0; i < maxRequests; i++) {
-    const body: Record<string, unknown> = {};
-    if (startCursor) body.start_cursor = startCursor;
-    const response = await fetch(QUERY_URL, {
-      method: "POST",
-      headers: apiHeaders(apiKey),
-      body: JSON.stringify(body),
-    });
-    if (!response.ok) {
-      throw new Error(`Notion API error ${response.status}: ${await response.text()}`);
-    }
-    const data = (await response.json()) as {
-      results: NotionPage[];
-      has_more?: boolean;
-      next_cursor?: string | null;
-    };
-    pages.push(...data.results);
-    startCursor = data.next_cursor ?? undefined;
-    if (!(data.has_more ?? false)) return { pages, nextCursor: null };
-  }
-  return { pages, nextCursor: startCursor ?? null };
+	const pages: NotionPage[] = [];
+	let startCursor = cursor ?? undefined;
+	for (let i = 0; i < maxRequests; i++) {
+		const body: Record<string, unknown> = {};
+		if (startCursor) body.start_cursor = startCursor;
+		const response = await fetch(QUERY_URL, {
+			method: 'POST',
+			headers: apiHeaders(apiKey),
+			body: JSON.stringify(body)
+		});
+		if (!response.ok) {
+			throw new Error(`Notion API error ${response.status}: ${await response.text()}`);
+		}
+		const data = (await response.json()) as {
+			results: NotionPage[];
+			has_more?: boolean;
+			next_cursor?: string | null;
+		};
+		pages.push(...data.results);
+		startCursor = data.next_cursor ?? undefined;
+		if (!(data.has_more ?? false)) return { pages, nextCursor: null };
+	}
+	return { pages, nextCursor: startCursor ?? null };
 }
-
