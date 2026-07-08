@@ -56,11 +56,13 @@ DELETED: deploy/, nix/, deno.json, svelte.config.js, .deploy.env.example,
 ### Task 1: Demolition + template scaffold adoption
 
 **Files:**
+
 - Delete: `deploy/` (entire dir incl. tfstate), `nix/`, `deno.json`, `svelte.config.js`, `.deploy.env.example`, `docs/superpowers/specs/2026-05-21-oci-deploy-via-nixos-modules-design.md`, `docs/superpowers/plans/` OCI plan files (any plan file mentioning OCI/NixOS — NOT this plan)
 - Create (copy from `~/Desktop/coding/templates/cf-site/`): `vite.config.ts` (overwrite), `tsconfig.json` (overwrite), `prettier.config.js`, `.npmrc`, `.prettierignore`, `scripts/sync-secrets.sh`, `.github/workflows/deploy.yml`, `worker-configuration.d.ts`
 - Modify: `package.json`, `wrangler.jsonc` (new), `justfile` (rewrite), `.gitignore`, `.env.tpl` (new), `src/app.d.ts` (new)
 
 **Interfaces:**
+
 - Produces: a repo where `bun install` and `bunx svelte-kit sync` succeed; `platform.env` is typed as `Env & { NOTION_API_KEY?: string }` with `Env.CACHE: R2Bucket`. Type-check/build stays red until Task 6–7 removes Deno globals from `src/lib/server/` — that is expected.
 
 - [ ] **Step 1: Commit the pre-existing working-tree changes** (mobile layout tweaks etc. — don't mix them into migration commits)
@@ -94,47 +96,47 @@ cp $T/src/app.d.ts src/app.d.ts
 
 ```json
 {
-  "name": "task-burndown",
-  "private": true,
-  "version": "0.1.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite dev",
-    "build": "wrangler types --check && vite build",
-    "preview": "wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173",
-    "prepare": "svelte-kit sync || echo ''",
-    "check": "wrangler types --check && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-    "lint": "prettier --check .",
-    "format": "prettier --write .",
-    "test:unit": "vitest",
-    "test": "bun run test:unit -- --run",
-    "gen": "wrangler types"
-  },
-  "dependencies": {
-    "chart.js": "^4.5.1",
-    "chartjs-adapter-dayjs-4": "^1.0.4",
-    "chartjs-plugin-zoom": "^2.2.0",
-    "dayjs": "^1.11.20",
-    "svelte-chartjs": "^4.0.1"
-  },
-  "devDependencies": {
-    "@resvg/resvg-js": "^2.6.2",
-    "@sveltejs/adapter-cloudflare": "^7.2.8",
-    "@sveltejs/kit": "^2.63.0",
-    "@sveltejs/vite-plugin-svelte": "^7.1.2",
-    "@tailwindcss/vite": "^4.3.0",
-    "prettier": "^3.8.3",
-    "prettier-plugin-svelte": "^4.1.0",
-    "prettier-plugin-tailwindcss": "^0.8.0",
-    "svelte": "^5.56.1",
-    "svelte-check": "^4.6.0",
-    "tailwindcss": "^4.3.0",
-    "typescript": "^6.0.3",
-    "vite": "^8.0.16",
-    "vitest": "^4.1.8",
-    "wrangler": "^4.97.0"
-  }
+	"name": "task-burndown",
+	"private": true,
+	"version": "0.1.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "wrangler types --check && vite build",
+		"preview": "wrangler dev .svelte-kit/cloudflare/_worker.js --port 4173",
+		"prepare": "svelte-kit sync || echo ''",
+		"check": "wrangler types --check && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"lint": "prettier --check .",
+		"format": "prettier --write .",
+		"test:unit": "vitest",
+		"test": "bun run test:unit -- --run",
+		"gen": "wrangler types"
+	},
+	"dependencies": {
+		"chart.js": "^4.5.1",
+		"chartjs-adapter-dayjs-4": "^1.0.4",
+		"chartjs-plugin-zoom": "^2.2.0",
+		"dayjs": "^1.11.20",
+		"svelte-chartjs": "^4.0.1"
+	},
+	"devDependencies": {
+		"@resvg/resvg-js": "^2.6.2",
+		"@sveltejs/adapter-cloudflare": "^7.2.8",
+		"@sveltejs/kit": "^2.63.0",
+		"@sveltejs/vite-plugin-svelte": "^7.1.2",
+		"@tailwindcss/vite": "^4.3.0",
+		"prettier": "^3.8.3",
+		"prettier-plugin-svelte": "^4.1.0",
+		"prettier-plugin-tailwindcss": "^0.8.0",
+		"svelte": "^5.56.1",
+		"svelte-check": "^4.6.0",
+		"tailwindcss": "^4.3.0",
+		"typescript": "^6.0.3",
+		"vite": "^8.0.16",
+		"vitest": "^4.1.8",
+		"wrangler": "^4.97.0"
+	}
 }
 ```
 
@@ -144,20 +146,18 @@ cp $T/src/app.d.ts src/app.d.ts
 
 ```jsonc
 {
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "task-burndown",
-  "compatibility_date": "2026-07-06",
-  "compatibility_flags": ["nodejs_als"],
-  "main": ".svelte-kit/cloudflare/_worker.js",
-  "assets": {
-    "binding": "ASSETS",
-    "directory": ".svelte-kit/cloudflare"
-  },
-  "workers_dev": true,
-  "preview_urls": true,
-  "r2_buckets": [
-    { "binding": "CACHE", "bucket_name": "task-burndown-cache" }
-  ]
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "task-burndown",
+	"compatibility_date": "2026-07-06",
+	"compatibility_flags": ["nodejs_als"],
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	"workers_dev": true,
+	"preview_urls": true,
+	"r2_buckets": [{ "binding": "CACHE", "bucket_name": "task-burndown-cache" }]
 }
 ```
 
@@ -166,14 +166,14 @@ cp $T/src/app.d.ts src/app.d.ts
 ```ts
 // See https://svelte.dev/docs/kit/types#app.d.ts
 declare global {
-  namespace App {
-    interface Platform {
-      env: Env & { NOTION_API_KEY?: string };
-      ctx: ExecutionContext;
-      caches: CacheStorage;
-      cf?: IncomingRequestCfProperties;
-    }
-  }
+	namespace App {
+		interface Platform {
+			env: Env & { NOTION_API_KEY?: string };
+			ctx: ExecutionContext;
+			caches: CacheStorage;
+			cf?: IncomingRequestCfProperties;
+		}
+	}
 }
 
 export {};
@@ -239,8 +239,8 @@ NOTION_API_KEY=op://Task Burndown/Notion Task Burndown Chart Notion Internal Int
 - [ ] **Step 9: Edit `.github/workflows/deploy.yml`** — replace the two `CHANGEME-vault` refs:
 
 ```yaml
-          CLOUDFLARE_API_TOKEN: op://Task Burndown/cloudflare/api-token
-          CLOUDFLARE_ACCOUNT_ID: op://Task Burndown/cloudflare/account-id
+CLOUDFLARE_API_TOKEN: op://Task Burndown/cloudflare/api-token
+CLOUDFLARE_ACCOUNT_ID: op://Task Burndown/cloudflare/account-id
 ```
 
 - [ ] **Step 10: Rewrite `.gitignore`** (template's + this repo's extras)
@@ -277,6 +277,7 @@ notion-cache.json
 ```bash
 bun install && bunx svelte-kit sync && bun run gen
 ```
+
 Expected: install succeeds; `worker-configuration.d.ts` now contains `interface Env { CACHE: R2Bucket; }` (verify with `grep -n "CACHE" worker-configuration.d.ts`). `bun run check` is expected RED (Deno globals in `src/lib/server/`) until Tasks 6–7.
 
 - [ ] **Step 12: Commit**
@@ -291,15 +292,18 @@ git commit -m "feat: adopt cf-site scaffold, drop Deno/OCI/nix stacks"
 ### Task 2: Port all tests to vitest
 
 **Files:**
+
 - Modify: `src/lib/data/calculator.test.ts`, `src/lib/data/events.test.ts`, `src/lib/data/preferences.test.ts`, `src/lib/data/presets.test.ts`, `src/lib/data/timezone.test.ts`, `src/lib/server/refresh-policy.test.ts`, `src/lib/server/notion.test.ts`
 - Delete: `src/lib/server/cache.test.ts` (it only tests `getCachePath`, which dies in Task 6; R2 tests replace it there)
 
 **Interfaces:**
+
 - Produces: `bun run test` green. No source-file changes in this task.
 
 - [ ] **Step 1: Apply the mechanical transform to each listed test file**
 
 Per file, three edits (no logic changes):
+
 1. `import { assertEquals } from "@std/assert";` → `import { expect, test } from "vitest";`
 2. Every `Deno.test(` → `test(`
 3. Every `assertEquals(A, B)` → `expect(A).toEqual(B)` (assertEquals calls may span lines — the first argument becomes the `expect()` argument, the second the `toEqual()` argument)
@@ -308,14 +312,29 @@ Example, `src/lib/server/refresh-policy.test.ts` before/after:
 
 ```ts
 // before
-import { assertEquals } from "@std/assert";
-Deno.test("forceFull always wins", () => {
-  assertEquals(shouldFullRefresh({ forceFull: true, hasCache: true, lastFullRefreshAt: NOW.toISOString(), now: NOW }), true);
+import { assertEquals } from '@std/assert';
+Deno.test('forceFull always wins', () => {
+	assertEquals(
+		shouldFullRefresh({
+			forceFull: true,
+			hasCache: true,
+			lastFullRefreshAt: NOW.toISOString(),
+			now: NOW
+		}),
+		true
+	);
 });
 // after
-import { expect, test } from "vitest";
-test("forceFull always wins", () => {
-  expect(shouldFullRefresh({ forceFull: true, hasCache: true, lastFullRefreshAt: NOW.toISOString(), now: NOW })).toEqual(true);
+import { expect, test } from 'vitest';
+test('forceFull always wins', () => {
+	expect(
+		shouldFullRefresh({
+			forceFull: true,
+			hasCache: true,
+			lastFullRefreshAt: NOW.toISOString(),
+			now: NOW
+		})
+	).toEqual(true);
 });
 ```
 
@@ -332,6 +351,7 @@ git rm src/lib/server/cache.test.ts
 ```bash
 bun run test
 ```
+
 Expected: PASS, 7 test files. If vitest fails to resolve `./x.ts`-style imports, the tsconfig from Task 1 (`rewriteRelativeImportExtensions`) plus the sveltekit plugin handles it — investigate before changing imports.
 
 - [ ] **Step 4: Commit**
@@ -345,53 +365,55 @@ git add -A && git commit -m "test: port unit tests from deno test to vitest"
 ### Task 3: Task.lastEditedTime + unfiltered parseTasks + TaskCache type
 
 **Files:**
+
 - Modify: `src/lib/types.ts`, `src/lib/data/parser.ts`
 - Create: `src/lib/data/parser.test.ts`
 
 **Interfaces:**
+
 - Produces: `Task.lastEditedTime: string`; `interface TaskCache extends ParsedData { lastFullRefreshAt: string | null }`; `parseTasks(pages: NotionPage[]): ParsedData` now returns **unfiltered** tasks; `export const PRIORITY_ORDER = ["High", "Medium", "Low", "(No Priority)"]` from `parser.ts`. Consumers must apply `applyBaseFilters` themselves (client does this in Task 9).
 
 - [ ] **Step 1: Write the failing tests** — `src/lib/data/parser.test.ts`
 
 ```ts
-import { expect, test } from "vitest";
-import { parseTasks } from "./parser.ts";
-import type { NotionPage } from "$lib/types.js";
+import { expect, test } from 'vitest';
+import { parseTasks } from './parser.ts';
+import type { NotionPage } from '$lib/types.js';
 
 function makePage(overrides: Partial<NotionPage> = {}): NotionPage {
-  return {
-    id: "p1",
-    created_time: "2026-01-02T03:04:05.000Z",
-    last_edited_time: "2026-02-03T04:05:06.000Z",
-    archived: false,
-    in_trash: false,
-    url: "",
-    properties: {
-      "Date Created": { created_time: "2026-01-02T03:04:05.000Z" },
-      "Completed Date": { date: null },
-      "Due Date": { date: null },
-      Status: { status: { name: "Not started" } },
-      Tags: { multi_select: [{ name: "Chore", color: "blue" }] },
-      Priority: { select: { name: "High" } },
-      "Tag & Date History": { rich_text: [] },
-      "Project Title": { rollup: { array: [] } },
-    },
-    ...overrides,
-  };
+	return {
+		id: 'p1',
+		created_time: '2026-01-02T03:04:05.000Z',
+		last_edited_time: '2026-02-03T04:05:06.000Z',
+		archived: false,
+		in_trash: false,
+		url: '',
+		properties: {
+			'Date Created': { created_time: '2026-01-02T03:04:05.000Z' },
+			'Completed Date': { date: null },
+			'Due Date': { date: null },
+			Status: { status: { name: 'Not started' } },
+			Tags: { multi_select: [{ name: 'Chore', color: 'blue' }] },
+			Priority: { select: { name: 'High' } },
+			'Tag & Date History': { rich_text: [] },
+			'Project Title': { rollup: { array: [] } }
+		},
+		...overrides
+	};
 }
 
-test("parseTasks carries last_edited_time onto the task", () => {
-  const { tasks } = parseTasks([makePage()]);
-  expect(tasks[0].lastEditedTime).toEqual("2026-02-03T04:05:06.000Z");
+test('parseTasks carries last_edited_time onto the task', () => {
+	const { tasks } = parseTasks([makePage()]);
+	expect(tasks[0].lastEditedTime).toEqual('2026-02-03T04:05:06.000Z');
 });
 
-test("parseTasks no longer applies base filters (cancelled tasks stay)", () => {
-  const cancelled = makePage({
-    id: "p2",
-    properties: { ...makePage().properties, Status: { status: { name: "Cancelled" } } },
-  });
-  const { tasks } = parseTasks([makePage(), cancelled]);
-  expect(tasks.length).toEqual(2);
+test('parseTasks no longer applies base filters (cancelled tasks stay)', () => {
+	const cancelled = makePage({
+		id: 'p2',
+		properties: { ...makePage().properties, Status: { status: { name: 'Cancelled' } } }
+	});
+	const { tasks } = parseTasks([makePage(), cancelled]);
+	expect(tasks.length).toEqual(2);
 });
 ```
 
@@ -400,6 +422,7 @@ test("parseTasks no longer applies base filters (cancelled tasks stay)", () => {
 ```bash
 bunx vitest run src/lib/data/parser.test.ts
 ```
+
 Expected: FAIL — `lastEditedTime` undefined, and length 1 (filter still applied).
 
 - [ ] **Step 3: Implement**
@@ -407,18 +430,19 @@ Expected: FAIL — `lastEditedTime` undefined, and length 1 (filter still applie
 In `src/lib/types.ts`, add to `Task`:
 
 ```ts
-  lastEditedTime: string;
+lastEditedTime: string;
 ```
 
 and after `ParsedData`:
 
 ```ts
 export interface TaskCache extends ParsedData {
-  lastFullRefreshAt: string | null;
+	lastFullRefreshAt: string | null;
 }
 ```
 
 In `src/lib/data/parser.ts`:
+
 - Remove the `applyBaseFilters` import.
 - In `parseTask`'s return object add `lastEditedTime: page.last_edited_time,`.
 - In `parseTasks`, replace `const tasks = applyBaseFilters(allParsed);` with `const tasks = allParsed;`.
@@ -435,6 +459,7 @@ export const PRIORITY_ORDER = ["High", "Medium", "Low", "(No Priority)"];
 ```bash
 bun run test
 ```
+
 Expected: PASS (all files).
 
 - [ ] **Step 5: Commit**
@@ -448,10 +473,12 @@ git add -A && git commit -m "feat(parser): emit lastEditedTime, stop base-filter
 ### Task 4: merge.ts — task-level merge + incremental threshold
 
 **Files:**
+
 - Create: `src/lib/data/merge.ts`, `src/lib/data/merge.test.ts`
 - Modify: `src/lib/server/notion.ts` (delete `mergePages`, `getIncrementalSinceDate`), `src/lib/server/notion.test.ts` (delete their tests)
 
 **Interfaces:**
+
 - Consumes: `Task`, `ParsedData`, `PRIORITY_ORDER` (Task 3).
 - Produces:
   - `mergeParsedData(base: ParsedData, fresh: ParsedData): ParsedData` — tasks merged by id (fresh wins), tags/projects sorted set-union, priorities in `PRIORITY_ORDER`, `tagColors` object-spread (fresh wins).
@@ -461,51 +488,84 @@ git add -A && git commit -m "feat(parser): emit lastEditedTime, stop base-filter
 - [ ] **Step 1: Write failing tests** — `src/lib/data/merge.test.ts`
 
 ```ts
-import { expect, test } from "vitest";
-import { getIncrementalSince, mergeParsedData } from "./merge.ts";
-import type { ParsedData, Task } from "$lib/types.js";
+import { expect, test } from 'vitest';
+import { getIncrementalSince, mergeParsedData } from './merge.ts';
+import type { ParsedData, Task } from '$lib/types.js';
 
 function makeTask(overrides: Partial<Task> = {}): Task {
-  return {
-    id: "t1", created: "2026-01-01T00:00:00.000Z", completed: null, dueDate: null,
-    status: "Not started", tags: [], priority: "(No Priority)", projectName: "(No Project)",
-    history: [], hasProject: false, lastEditedTime: "2026-01-02T00:00:00.000Z",
-    ...overrides,
-  };
+	return {
+		id: 't1',
+		created: '2026-01-01T00:00:00.000Z',
+		completed: null,
+		dueDate: null,
+		status: 'Not started',
+		tags: [],
+		priority: '(No Priority)',
+		projectName: '(No Project)',
+		history: [],
+		hasProject: false,
+		lastEditedTime: '2026-01-02T00:00:00.000Z',
+		...overrides
+	};
 }
 function makeParsed(overrides: Partial<ParsedData> = {}): ParsedData {
-  return { tasks: [], allTags: [], allPriorities: [], allProjects: [], tagColors: {}, ...overrides };
+	return {
+		tasks: [],
+		allTags: [],
+		allPriorities: [],
+		allProjects: [],
+		tagColors: {},
+		...overrides
+	};
 }
 
-test("mergeParsedData: fresh task replaces cached task with same id", () => {
-  const base = makeParsed({ tasks: [makeTask({ status: "Not started" })] });
-  const fresh = makeParsed({ tasks: [makeTask({ status: "Done" })] });
-  const merged = mergeParsedData(base, fresh);
-  expect(merged.tasks.length).toEqual(1);
-  expect(merged.tasks[0].status).toEqual("Done");
+test('mergeParsedData: fresh task replaces cached task with same id', () => {
+	const base = makeParsed({ tasks: [makeTask({ status: 'Not started' })] });
+	const fresh = makeParsed({ tasks: [makeTask({ status: 'Done' })] });
+	const merged = mergeParsedData(base, fresh);
+	expect(merged.tasks.length).toEqual(1);
+	expect(merged.tasks[0].status).toEqual('Done');
 });
 
-test("mergeParsedData: unions metadata", () => {
-  const base = makeParsed({ allTags: ["Chore"], allPriorities: ["High"], allProjects: ["A"], tagColors: { Chore: "blue" } });
-  const fresh = makeParsed({ allTags: ["Work"], allPriorities: ["Low"], allProjects: ["B"], tagColors: { Work: "red" } });
-  const merged = mergeParsedData(base, fresh);
-  expect(merged.allTags).toEqual(["Chore", "Work"]);
-  expect(merged.allPriorities).toEqual(["High", "Low"]);
-  expect(merged.allProjects).toEqual(["A", "B"]);
-  expect(merged.tagColors).toEqual({ Chore: "blue", Work: "red" });
+test('mergeParsedData: unions metadata', () => {
+	const base = makeParsed({
+		allTags: ['Chore'],
+		allPriorities: ['High'],
+		allProjects: ['A'],
+		tagColors: { Chore: 'blue' }
+	});
+	const fresh = makeParsed({
+		allTags: ['Work'],
+		allPriorities: ['Low'],
+		allProjects: ['B'],
+		tagColors: { Work: 'red' }
+	});
+	const merged = mergeParsedData(base, fresh);
+	expect(merged.allTags).toEqual(['Chore', 'Work']);
+	expect(merged.allPriorities).toEqual(['High', 'Low']);
+	expect(merged.allProjects).toEqual(['A', 'B']);
+	expect(merged.tagColors).toEqual({ Chore: 'blue', Work: 'red' });
 });
 
-test("getIncrementalSince: earlier of the two maxima", () => {
-  const tasks = [
-    makeTask({ id: "a", created: "2026-01-05T00:00:00.000Z", lastEditedTime: "2026-01-06T00:00:00.000Z" }),
-    makeTask({ id: "b", created: "2026-01-01T00:00:00.000Z", lastEditedTime: "2026-01-09T00:00:00.000Z" }),
-  ];
-  // max(created)=01-05, max(edited)=01-09 -> earlier is 01-05
-  expect(getIncrementalSince(tasks)).toEqual("2026-01-05T00:00:00.000Z");
+test('getIncrementalSince: earlier of the two maxima', () => {
+	const tasks = [
+		makeTask({
+			id: 'a',
+			created: '2026-01-05T00:00:00.000Z',
+			lastEditedTime: '2026-01-06T00:00:00.000Z'
+		}),
+		makeTask({
+			id: 'b',
+			created: '2026-01-01T00:00:00.000Z',
+			lastEditedTime: '2026-01-09T00:00:00.000Z'
+		})
+	];
+	// max(created)=01-05, max(edited)=01-09 -> earlier is 01-05
+	expect(getIncrementalSince(tasks)).toEqual('2026-01-05T00:00:00.000Z');
 });
 
-test("getIncrementalSince: null for empty", () => {
-  expect(getIncrementalSince([])).toEqual(null);
+test('getIncrementalSince: null for empty', () => {
+	expect(getIncrementalSince([])).toEqual(null);
 });
 ```
 
@@ -514,34 +574,34 @@ test("getIncrementalSince: null for empty", () => {
 - [ ] **Step 3: Implement** — `src/lib/data/merge.ts`
 
 ```ts
-import type { ParsedData, Task } from "$lib/types.js";
-import { PRIORITY_ORDER } from "./parser.js";
+import type { ParsedData, Task } from '$lib/types.js';
+import { PRIORITY_ORDER } from './parser.js';
 
 export function mergeParsedData(base: ParsedData, fresh: ParsedData): ParsedData {
-  const byId = new Map<string, Task>();
-  for (const t of base.tasks) byId.set(t.id, t);
-  for (const t of fresh.tasks) byId.set(t.id, t);
-  return {
-    tasks: [...byId.values()],
-    allTags: [...new Set([...base.allTags, ...fresh.allTags])].sort(),
-    allPriorities: PRIORITY_ORDER.filter(
-      (p) => base.allPriorities.includes(p) || fresh.allPriorities.includes(p),
-    ),
-    allProjects: [...new Set([...base.allProjects, ...fresh.allProjects])].sort(),
-    tagColors: { ...base.tagColors, ...fresh.tagColors },
-  };
+	const byId = new Map<string, Task>();
+	for (const t of base.tasks) byId.set(t.id, t);
+	for (const t of fresh.tasks) byId.set(t.id, t);
+	return {
+		tasks: [...byId.values()],
+		allTags: [...new Set([...base.allTags, ...fresh.allTags])].sort(),
+		allPriorities: PRIORITY_ORDER.filter(
+			(p) => base.allPriorities.includes(p) || fresh.allPriorities.includes(p)
+		),
+		allProjects: [...new Set([...base.allProjects, ...fresh.allProjects])].sort(),
+		tagColors: { ...base.tagColors, ...fresh.tagColors }
+	};
 }
 
 /** Earlier of max(created) / max(lastEditedTime) — mirrors the old page-based threshold. */
 export function getIncrementalSince(tasks: Task[]): string | null {
-  if (tasks.length === 0) return null;
-  let maxCreated = "";
-  let maxEdited = "";
-  for (const t of tasks) {
-    if (t.created > maxCreated) maxCreated = t.created;
-    if (t.lastEditedTime > maxEdited) maxEdited = t.lastEditedTime;
-  }
-  return maxCreated < maxEdited ? maxCreated : maxEdited;
+	if (tasks.length === 0) return null;
+	let maxCreated = '';
+	let maxEdited = '';
+	for (const t of tasks) {
+		if (t.created > maxCreated) maxCreated = t.created;
+		if (t.lastEditedTime > maxEdited) maxEdited = t.lastEditedTime;
+	}
+	return maxCreated < maxEdited ? maxCreated : maxEdited;
 }
 ```
 
@@ -562,56 +622,67 @@ git add -A && git commit -m "feat(data): add task-level mergeParsedData + getInc
 ### Task 5: notion.ts fetchPageChunk
 
 **Files:**
+
 - Modify: `src/lib/server/notion.ts`
 - Create/modify: `src/lib/server/notion.test.ts`
 
 **Interfaces:**
+
 - Produces: `fetchPageChunk(apiKey: string, cursor: string | null, maxRequests?: number): Promise<{ pages: NotionPage[]; nextCursor: string | null }>` — up to `maxRequests` (default 3) sequential Notion query calls, resuming from `cursor`. `fetchAllPages` and `fetchIncrementalPages` stay as-is (`fetchAllPages` is used by the seed script only).
 
 - [ ] **Step 1: Write failing test** (append to `src/lib/server/notion.test.ts`, creating the file if Task 4 removed it)
 
 ```ts
-import { afterEach, expect, test, vi } from "vitest";
-import { fetchPageChunk } from "./notion.ts";
+import { afterEach, expect, test, vi } from 'vitest';
+import { fetchPageChunk } from './notion.ts';
 
 function notionResponse(ids: string[], nextCursor: string | null) {
-  return new Response(
-    JSON.stringify({
-      results: ids.map((id) => ({ id, created_time: "", last_edited_time: "", properties: {}, archived: false, in_trash: false, url: "" })),
-      has_more: nextCursor !== null,
-      next_cursor: nextCursor,
-    }),
-    { status: 200 },
-  );
+	return new Response(
+		JSON.stringify({
+			results: ids.map((id) => ({
+				id,
+				created_time: '',
+				last_edited_time: '',
+				properties: {},
+				archived: false,
+				in_trash: false,
+				url: ''
+			})),
+			has_more: nextCursor !== null,
+			next_cursor: nextCursor
+		}),
+		{ status: 200 }
+	);
 }
 
 afterEach(() => vi.unstubAllGlobals());
 
-test("fetchPageChunk stops after maxRequests and returns the cursor", async () => {
-  const fetchMock = vi.fn()
-    .mockResolvedValueOnce(notionResponse(["a"], "c1"))
-    .mockResolvedValueOnce(notionResponse(["b"], "c2"))
-    .mockResolvedValueOnce(notionResponse(["c"], "c3"));
-  vi.stubGlobal("fetch", fetchMock);
-  const chunk = await fetchPageChunk("key", null, 3);
-  expect(fetchMock.mock.calls.length).toEqual(3);
-  expect(chunk.pages.map((p) => p.id)).toEqual(["a", "b", "c"]);
-  expect(chunk.nextCursor).toEqual("c3");
+test('fetchPageChunk stops after maxRequests and returns the cursor', async () => {
+	const fetchMock = vi
+		.fn()
+		.mockResolvedValueOnce(notionResponse(['a'], 'c1'))
+		.mockResolvedValueOnce(notionResponse(['b'], 'c2'))
+		.mockResolvedValueOnce(notionResponse(['c'], 'c3'));
+	vi.stubGlobal('fetch', fetchMock);
+	const chunk = await fetchPageChunk('key', null, 3);
+	expect(fetchMock.mock.calls.length).toEqual(3);
+	expect(chunk.pages.map((p) => p.id)).toEqual(['a', 'b', 'c']);
+	expect(chunk.nextCursor).toEqual('c3');
 });
 
-test("fetchPageChunk returns null cursor when Notion is exhausted early", async () => {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(notionResponse(["a"], null)));
-  const chunk = await fetchPageChunk("key", null, 3);
-  expect(chunk.pages.map((p) => p.id)).toEqual(["a"]);
-  expect(chunk.nextCursor).toEqual(null);
+test('fetchPageChunk returns null cursor when Notion is exhausted early', async () => {
+	vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(notionResponse(['a'], null)));
+	const chunk = await fetchPageChunk('key', null, 3);
+	expect(chunk.pages.map((p) => p.id)).toEqual(['a']);
+	expect(chunk.nextCursor).toEqual(null);
 });
 
-test("fetchPageChunk resumes from a given cursor", async () => {
-  const fetchMock = vi.fn().mockResolvedValueOnce(notionResponse(["z"], null));
-  vi.stubGlobal("fetch", fetchMock);
-  await fetchPageChunk("key", "resume-me", 3);
-  const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-  expect(body.start_cursor).toEqual("resume-me");
+test('fetchPageChunk resumes from a given cursor', async () => {
+	const fetchMock = vi.fn().mockResolvedValueOnce(notionResponse(['z'], null));
+	vi.stubGlobal('fetch', fetchMock);
+	await fetchPageChunk('key', 'resume-me', 3);
+	const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+	expect(body.start_cursor).toEqual('resume-me');
 });
 ```
 
@@ -621,8 +692,8 @@ test("fetchPageChunk resumes from a given cursor", async () => {
 
 ```ts
 export interface PageChunk {
-  pages: NotionPage[];
-  nextCursor: string | null;
+	pages: NotionPage[];
+	nextCursor: string | null;
 }
 
 /**
@@ -631,29 +702,29 @@ export interface PageChunk {
  * subrequests — the client loops with nextCursor until null.
  */
 export async function fetchPageChunk(
-  apiKey: string,
-  cursor: string | null,
-  maxRequests = 3,
+	apiKey: string,
+	cursor: string | null,
+	maxRequests = 3
 ): Promise<PageChunk> {
-  const pages: NotionPage[] = [];
-  let startCursor = cursor ?? undefined;
-  for (let i = 0; i < maxRequests; i++) {
-    const body: Record<string, unknown> = {};
-    if (startCursor) body.start_cursor = startCursor;
-    const response = await fetch(QUERY_URL, {
-      method: "POST",
-      headers: apiHeaders(apiKey),
-      body: JSON.stringify(body),
-    });
-    if (!response.ok) {
-      throw new Error(`Notion API error ${response.status}: ${await response.text()}`);
-    }
-    const data = await response.json();
-    pages.push(...(data.results as NotionPage[]));
-    startCursor = data.next_cursor ?? undefined;
-    if (!(data.has_more ?? false)) return { pages, nextCursor: null };
-  }
-  return { pages, nextCursor: startCursor ?? null };
+	const pages: NotionPage[] = [];
+	let startCursor = cursor ?? undefined;
+	for (let i = 0; i < maxRequests; i++) {
+		const body: Record<string, unknown> = {};
+		if (startCursor) body.start_cursor = startCursor;
+		const response = await fetch(QUERY_URL, {
+			method: 'POST',
+			headers: apiHeaders(apiKey),
+			body: JSON.stringify(body)
+		});
+		if (!response.ok) {
+			throw new Error(`Notion API error ${response.status}: ${await response.text()}`);
+		}
+		const data = await response.json();
+		pages.push(...(data.results as NotionPage[]));
+		startCursor = data.next_cursor ?? undefined;
+		if (!(data.has_more ?? false)) return { pages, nextCursor: null };
+	}
+	return { pages, nextCursor: startCursor ?? null };
 }
 ```
 
@@ -670,10 +741,12 @@ git add -A && git commit -m "feat(notion): add fetchPageChunk for client-driven 
 ### Task 6: cache.ts on R2 + secrets.ts env-only
 
 **Files:**
+
 - Rewrite: `src/lib/server/cache.ts`, `src/lib/server/secrets.ts`
 - Create: `src/lib/server/cache.test.ts`
 
 **Interfaces:**
+
 - Consumes: `TaskCache` (Task 3).
 - Produces:
   - `CACHE_KEY = "task-cache.json"`, `EMPTY_CACHE: TaskCache`
@@ -684,35 +757,35 @@ git add -A && git commit -m "feat(notion): add fetchPageChunk for client-driven 
 - [ ] **Step 1: Write failing tests** — `src/lib/server/cache.test.ts`
 
 ```ts
-import { expect, test } from "vitest";
-import { CACHE_KEY, EMPTY_CACHE, readCache, writeCache } from "./cache.ts";
-import type { TaskCache } from "$lib/types.js";
+import { expect, test } from 'vitest';
+import { CACHE_KEY, EMPTY_CACHE, readCache, writeCache } from './cache.ts';
+import type { TaskCache } from '$lib/types.js';
 
 function fakeBucket() {
-  const store = new Map<string, string>();
-  return {
-    store,
-    async get(key: string) {
-      const v = store.get(key);
-      return v === undefined ? null : { json: async () => JSON.parse(v) };
-    },
-    async put(key: string, value: string) {
-      store.set(key, value);
-    },
-  };
+	const store = new Map<string, string>();
+	return {
+		store,
+		async get(key: string) {
+			const v = store.get(key);
+			return v === undefined ? null : { json: async () => JSON.parse(v) };
+		},
+		async put(key: string, value: string) {
+			store.set(key, value);
+		}
+	};
 }
 
-test("readCache returns EMPTY_CACHE when object missing", async () => {
-  const bucket = fakeBucket();
-  expect(await readCache(bucket as unknown as R2Bucket)).toEqual(EMPTY_CACHE);
+test('readCache returns EMPTY_CACHE when object missing', async () => {
+	const bucket = fakeBucket();
+	expect(await readCache(bucket as unknown as R2Bucket)).toEqual(EMPTY_CACHE);
 });
 
-test("writeCache then readCache round-trips", async () => {
-  const bucket = fakeBucket();
-  const data: TaskCache = { ...EMPTY_CACHE, lastFullRefreshAt: "2026-07-08T00:00:00.000Z" };
-  await writeCache(bucket as unknown as R2Bucket, data);
-  expect(bucket.store.has(CACHE_KEY)).toEqual(true);
-  expect(await readCache(bucket as unknown as R2Bucket)).toEqual(data);
+test('writeCache then readCache round-trips', async () => {
+	const bucket = fakeBucket();
+	const data: TaskCache = { ...EMPTY_CACHE, lastFullRefreshAt: '2026-07-08T00:00:00.000Z' };
+	await writeCache(bucket as unknown as R2Bucket, data);
+	expect(bucket.store.has(CACHE_KEY)).toEqual(true);
+	expect(await readCache(bucket as unknown as R2Bucket)).toEqual(data);
 });
 ```
 
@@ -721,29 +794,29 @@ test("writeCache then readCache round-trips", async () => {
 - [ ] **Step 3: Rewrite `src/lib/server/cache.ts`**
 
 ```ts
-import type { TaskCache } from "$lib/types.js";
+import type { TaskCache } from '$lib/types.js';
 
-export const CACHE_KEY = "task-cache.json";
+export const CACHE_KEY = 'task-cache.json';
 
 export const EMPTY_CACHE: TaskCache = {
-  lastFullRefreshAt: null,
-  tasks: [],
-  allTags: [],
-  allPriorities: [],
-  allProjects: [],
-  tagColors: {},
+	lastFullRefreshAt: null,
+	tasks: [],
+	allTags: [],
+	allPriorities: [],
+	allProjects: [],
+	tagColors: {}
 };
 
 export async function readCache(bucket: R2Bucket): Promise<TaskCache> {
-  const obj = await bucket.get(CACHE_KEY);
-  if (!obj) return EMPTY_CACHE;
-  return (await obj.json()) as TaskCache;
+	const obj = await bucket.get(CACHE_KEY);
+	if (!obj) return EMPTY_CACHE;
+	return (await obj.json()) as TaskCache;
 }
 
 export async function writeCache(bucket: R2Bucket, data: TaskCache): Promise<void> {
-  await bucket.put(CACHE_KEY, JSON.stringify(data), {
-    httpMetadata: { contentType: "application/json" },
-  });
+	await bucket.put(CACHE_KEY, JSON.stringify(data), {
+		httpMetadata: { contentType: 'application/json' }
+	});
 }
 ```
 
@@ -752,12 +825,12 @@ export async function writeCache(bucket: R2Bucket, data: TaskCache): Promise<voi
 ```ts
 /** Prod: Worker secret on platform.env. Dev: process env injected by `op run`. */
 export function getNotionApiKey(env: { NOTION_API_KEY?: string }): string {
-  const key =
-    env.NOTION_API_KEY ??
-    (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
-      ?.NOTION_API_KEY;
-  if (!key) throw new Error("NOTION_API_KEY is not set (Worker secret or op run env)");
-  return key;
+	const key =
+		env.NOTION_API_KEY ??
+		(globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
+			?.NOTION_API_KEY;
+	if (!key) throw new Error('NOTION_API_KEY is not set (Worker secret or op run env)');
+	return key;
 }
 ```
 
@@ -774,11 +847,13 @@ git add -A && git commit -m "feat(server): R2-backed cache + env-only secret loo
 ### Task 7: API endpoints
 
 **Files:**
+
 - Create: `src/routes/api/tasks/+server.ts`, `src/routes/api/refresh-chunk/+server.ts`, `src/routes/api/cache/+server.ts`, `src/routes/api/refresh/refresh.test.ts`
 - Rewrite: `src/routes/api/refresh/+server.ts`
 - Delete: `src/routes/+page.server.ts`
 
 **Interfaces:**
+
 - Consumes: everything from Tasks 3–6.
 - Produces (client contract for Task 9):
   - `GET /api/tasks` → `TaskCache` JSON (streamed from R2; `EMPTY_CACHE` if unseeded)
@@ -789,76 +864,96 @@ git add -A && git commit -m "feat(server): R2-backed cache + env-only secret loo
 - [ ] **Step 1: Write failing handler tests** — `src/routes/api/refresh/refresh.test.ts`
 
 ```ts
-import { afterEach, expect, test, vi } from "vitest";
-import { POST } from "./+server.ts";
-import { CACHE_KEY, EMPTY_CACHE } from "$lib/server/cache.js";
+import { afterEach, expect, test, vi } from 'vitest';
+import { POST } from './+server.ts';
+import { CACHE_KEY, EMPTY_CACHE } from '$lib/server/cache.js';
 
 function fakeBucket(initial?: string) {
-  const store = new Map<string, string>();
-  if (initial !== undefined) store.set(CACHE_KEY, initial);
-  return {
-    store,
-    async get(key: string) {
-      const v = store.get(key);
-      return v === undefined ? null : { json: async () => JSON.parse(v) };
-    },
-    async put(key: string, value: string) {
-      store.set(key, value);
-    },
-  };
+	const store = new Map<string, string>();
+	if (initial !== undefined) store.set(CACHE_KEY, initial);
+	return {
+		store,
+		async get(key: string) {
+			const v = store.get(key);
+			return v === undefined ? null : { json: async () => JSON.parse(v) };
+		},
+		async put(key: string, value: string) {
+			store.set(key, value);
+		}
+	};
 }
-function makeEvent(bucket: ReturnType<typeof fakeBucket>, search = "") {
-  return {
-    url: new URL(`http://x/api/refresh${search}`),
-    platform: { env: { CACHE: bucket, NOTION_API_KEY: "k" } },
-  } as never;
+function makeEvent(bucket: ReturnType<typeof fakeBucket>, search = '') {
+	return {
+		url: new URL(`http://x/api/refresh${search}`),
+		platform: { env: { CACHE: bucket, NOTION_API_KEY: 'k' } }
+	} as never;
 }
 const task = {
-  id: "t1", created: "2026-07-01T00:00:00.000Z", completed: null, dueDate: null,
-  status: "Not started", tags: [], priority: "(No Priority)", projectName: "(No Project)",
-  history: [], hasProject: false, lastEditedTime: "2026-07-02T00:00:00.000Z",
+	id: 't1',
+	created: '2026-07-01T00:00:00.000Z',
+	completed: null,
+	dueDate: null,
+	status: 'Not started',
+	tags: [],
+	priority: '(No Priority)',
+	projectName: '(No Project)',
+	history: [],
+	hasProject: false,
+	lastEditedTime: '2026-07-02T00:00:00.000Z'
 };
 
 afterEach(() => vi.unstubAllGlobals());
 
-test("empty cache -> needsFull, no Notion call", async () => {
-  const fetchMock = vi.fn();
-  vi.stubGlobal("fetch", fetchMock);
-  const res = await POST(makeEvent(fakeBucket(), "?since=2026-07-08"));
-  expect(await res.json()).toEqual({ needsFull: true });
-  expect(fetchMock.mock.calls.length).toEqual(0);
+test('empty cache -> needsFull, no Notion call', async () => {
+	const fetchMock = vi.fn();
+	vi.stubGlobal('fetch', fetchMock);
+	const res = await POST(makeEvent(fakeBucket(), '?since=2026-07-08'));
+	expect(await res.json()).toEqual({ needsFull: true });
+	expect(fetchMock.mock.calls.length).toEqual(0);
 });
 
-test("stale cache without since -> needsFull", async () => {
-  const cache = { ...EMPTY_CACHE, tasks: [task], lastFullRefreshAt: "2020-01-01T00:00:00.000Z" };
-  const res = await POST(makeEvent(fakeBucket(JSON.stringify(cache))));
-  expect(await res.json()).toEqual({ needsFull: true });
+test('stale cache without since -> needsFull', async () => {
+	const cache = { ...EMPTY_CACHE, tasks: [task], lastFullRefreshAt: '2020-01-01T00:00:00.000Z' };
+	const res = await POST(makeEvent(fakeBucket(JSON.stringify(cache))));
+	expect(await res.json()).toEqual({ needsFull: true });
 });
 
-test("explicit since -> incremental merge, cache written", async () => {
-  const cache = { ...EMPTY_CACHE, tasks: [task], lastFullRefreshAt: "2026-07-08T00:00:00.000Z" };
-  const bucket = fakeBucket(JSON.stringify(cache));
-  const freshPage = {
-    id: "t2", created_time: "2026-07-08T01:00:00.000Z", last_edited_time: "2026-07-08T01:00:00.000Z",
-    archived: false, in_trash: false, url: "",
-    properties: {
-      "Date Created": { created_time: "2026-07-08T01:00:00.000Z" },
-      "Completed Date": { date: null }, "Due Date": { date: null },
-      Status: { status: { name: "Not started" } }, Tags: { multi_select: [] },
-      Priority: { select: null }, "Tag & Date History": { rich_text: [] },
-      "Project Title": { rollup: { array: [] } },
-    },
-  };
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(
-    new Response(JSON.stringify({ results: [freshPage], has_more: false, next_cursor: null }), { status: 200 }),
-  ));
-  const res = await POST(makeEvent(bucket, "?since=2026-07-08T00:00:00.000Z"));
-  const body = await res.json();
-  expect(body.needsFull).toEqual(false);
-  expect(body.freshCount).toEqual(1);
-  const written = JSON.parse(bucket.store.get(CACHE_KEY)!);
-  expect(written.tasks.length).toEqual(2);
-  expect(written.lastFullRefreshAt).toEqual("2026-07-08T00:00:00.000Z"); // unchanged by incremental
+test('explicit since -> incremental merge, cache written', async () => {
+	const cache = { ...EMPTY_CACHE, tasks: [task], lastFullRefreshAt: '2026-07-08T00:00:00.000Z' };
+	const bucket = fakeBucket(JSON.stringify(cache));
+	const freshPage = {
+		id: 't2',
+		created_time: '2026-07-08T01:00:00.000Z',
+		last_edited_time: '2026-07-08T01:00:00.000Z',
+		archived: false,
+		in_trash: false,
+		url: '',
+		properties: {
+			'Date Created': { created_time: '2026-07-08T01:00:00.000Z' },
+			'Completed Date': { date: null },
+			'Due Date': { date: null },
+			Status: { status: { name: 'Not started' } },
+			Tags: { multi_select: [] },
+			Priority: { select: null },
+			'Tag & Date History': { rich_text: [] },
+			'Project Title': { rollup: { array: [] } }
+		}
+	};
+	vi.stubGlobal(
+		'fetch',
+		vi.fn().mockResolvedValue(
+			new Response(JSON.stringify({ results: [freshPage], has_more: false, next_cursor: null }), {
+				status: 200
+			})
+		)
+	);
+	const res = await POST(makeEvent(bucket, '?since=2026-07-08T00:00:00.000Z'));
+	const body = await res.json();
+	expect(body.needsFull).toEqual(false);
+	expect(body.freshCount).toEqual(1);
+	const written = JSON.parse(bucket.store.get(CACHE_KEY)!);
+	expect(written.tasks.length).toEqual(2);
+	expect(written.lastFullRefreshAt).toEqual('2026-07-08T00:00:00.000Z'); // unchanged by incremental
 });
 ```
 
@@ -867,86 +962,94 @@ test("explicit since -> incremental merge, cache written", async () => {
 - [ ] **Step 3: Rewrite `src/routes/api/refresh/+server.ts`**
 
 ```ts
-import { json } from "@sveltejs/kit";
-import type { RequestHandler } from "./$types.js";
-import { getNotionApiKey } from "$lib/server/secrets.js";
-import { readCache, writeCache } from "$lib/server/cache.js";
-import { fetchIncrementalPages } from "$lib/server/notion.js";
-import { shouldFullRefresh } from "$lib/server/refresh-policy.js";
-import { parseTasks } from "$lib/data/parser.js";
-import { getIncrementalSince, mergeParsedData } from "$lib/data/merge.js";
+import { json } from '@sveltejs/kit';
+import type { RequestHandler } from './$types.js';
+import { getNotionApiKey } from '$lib/server/secrets.js';
+import { readCache, writeCache } from '$lib/server/cache.js';
+import { fetchIncrementalPages } from '$lib/server/notion.js';
+import { shouldFullRefresh } from '$lib/server/refresh-policy.js';
+import { parseTasks } from '$lib/data/parser.js';
+import { getIncrementalSince, mergeParsedData } from '$lib/data/merge.js';
 
 export const POST: RequestHandler = async ({ url, platform }) => {
-  const env = platform!.env;
-  const sinceParam = url.searchParams.get("since");
-  const cache = await readCache(env.CACHE);
-  const hasCache = cache.tasks.length > 0;
+	const env = platform!.env;
+	const sinceParam = url.searchParams.get('since');
+	const cache = await readCache(env.CACHE);
+	const hasCache = cache.tasks.length > 0;
 
-  // Full syncs are the client's job (chunked loop) — this endpoint only says so.
-  const needsFull =
-    !hasCache ||
-    (sinceParam === null &&
-      shouldFullRefresh({ forceFull: false, hasCache, lastFullRefreshAt: cache.lastFullRefreshAt }));
-  if (needsFull) return json({ needsFull: true });
+	// Full syncs are the client's job (chunked loop) — this endpoint only says so.
+	const needsFull =
+		!hasCache ||
+		(sinceParam === null &&
+			shouldFullRefresh({
+				forceFull: false,
+				hasCache,
+				lastFullRefreshAt: cache.lastFullRefreshAt
+			}));
+	if (needsFull) return json({ needsFull: true });
 
-  const since = sinceParam ?? getIncrementalSince(cache.tasks)!;
-  const fresh = await fetchIncrementalPages(getNotionApiKey(env), since);
-  const merged = mergeParsedData(cache, parseTasks(fresh));
-  const data = { ...merged, lastFullRefreshAt: cache.lastFullRefreshAt };
-  await writeCache(env.CACHE, data);
-  return json({ needsFull: false, freshCount: fresh.length, lastFullRefreshAt: data.lastFullRefreshAt });
+	const since = sinceParam ?? getIncrementalSince(cache.tasks)!;
+	const fresh = await fetchIncrementalPages(getNotionApiKey(env), since);
+	const merged = mergeParsedData(cache, parseTasks(fresh));
+	const data = { ...merged, lastFullRefreshAt: cache.lastFullRefreshAt };
+	await writeCache(env.CACHE, data);
+	return json({
+		needsFull: false,
+		freshCount: fresh.length,
+		lastFullRefreshAt: data.lastFullRefreshAt
+	});
 };
 ```
 
 - [ ] **Step 4: Create `src/routes/api/tasks/+server.ts`**
 
 ```ts
-import { json } from "@sveltejs/kit";
-import type { RequestHandler } from "./$types.js";
-import { CACHE_KEY, EMPTY_CACHE } from "$lib/server/cache.js";
+import { json } from '@sveltejs/kit';
+import type { RequestHandler } from './$types.js';
+import { CACHE_KEY, EMPTY_CACHE } from '$lib/server/cache.js';
 
 export const GET: RequestHandler = async ({ platform }) => {
-  const obj = await platform!.env.CACHE.get(CACHE_KEY);
-  if (!obj) return json(EMPTY_CACHE);
-  // Stream the R2 body straight through — ~0 CPU; the client parses.
-  return new Response(obj.body, { headers: { "content-type": "application/json" } });
+	const obj = await platform!.env.CACHE.get(CACHE_KEY);
+	if (!obj) return json(EMPTY_CACHE);
+	// Stream the R2 body straight through — ~0 CPU; the client parses.
+	return new Response(obj.body, { headers: { 'content-type': 'application/json' } });
 };
 ```
 
 - [ ] **Step 5: Create `src/routes/api/refresh-chunk/+server.ts`**
 
 ```ts
-import { json } from "@sveltejs/kit";
-import type { RequestHandler } from "./$types.js";
-import { getNotionApiKey } from "$lib/server/secrets.js";
-import { fetchPageChunk } from "$lib/server/notion.js";
-import { parseTasks } from "$lib/data/parser.js";
+import { json } from '@sveltejs/kit';
+import type { RequestHandler } from './$types.js';
+import { getNotionApiKey } from '$lib/server/secrets.js';
+import { fetchPageChunk } from '$lib/server/notion.js';
+import { parseTasks } from '$lib/data/parser.js';
 
 export const POST: RequestHandler = async ({ url, platform }) => {
-  const cursor = url.searchParams.get("cursor");
-  const chunk = await fetchPageChunk(getNotionApiKey(platform!.env), cursor);
-  return json({ ...parseTasks(chunk.pages), nextCursor: chunk.nextCursor });
+	const cursor = url.searchParams.get('cursor');
+	const chunk = await fetchPageChunk(getNotionApiKey(platform!.env), cursor);
+	return json({ ...parseTasks(chunk.pages), nextCursor: chunk.nextCursor });
 };
 ```
 
 - [ ] **Step 6: Create `src/routes/api/cache/+server.ts`**
 
 ```ts
-import { json } from "@sveltejs/kit";
-import type { RequestHandler } from "./$types.js";
-import { CACHE_KEY } from "$lib/server/cache.js";
+import { json } from '@sveltejs/kit';
+import type { RequestHandler } from './$types.js';
+import { CACHE_KEY } from '$lib/server/cache.js';
 
 export const PUT: RequestHandler = async ({ request, platform }) => {
-  const text = await request.text();
-  // ponytail: cheap sanity gate, not schema validation — CF Access already
-  // restricts callers to Alex; this only guards against a truncated body.
-  if (!text.startsWith("{") || text.length < 100) {
-    return json({ error: "bad cache body" }, { status: 400 });
-  }
-  await platform!.env.CACHE.put(CACHE_KEY, text, {
-    httpMetadata: { contentType: "application/json" },
-  });
-  return json({ ok: true });
+	const text = await request.text();
+	// ponytail: cheap sanity gate, not schema validation — CF Access already
+	// restricts callers to Alex; this only guards against a truncated body.
+	if (!text.startsWith('{') || text.length < 100) {
+		return json({ error: 'bad cache body' }, { status: 400 });
+	}
+	await platform!.env.CACHE.put(CACHE_KEY, text, {
+		httpMetadata: { contentType: 'application/json' }
+	});
+	return json({ ok: true });
 };
 ```
 
@@ -957,6 +1060,7 @@ export const PUT: RequestHandler = async ({ request, platform }) => {
 ```bash
 bun run test && bun run check
 ```
+
 Expected: tests PASS; `check` passes — no Deno symbols remain anywhere. If `check` flags `+page.svelte` (it still references `data`), that is Task 9's job; everything else must be clean.
 
 - [ ] **Step 9: Commit**
@@ -970,9 +1074,11 @@ git add -A && git commit -m "feat(api): tasks stream, incremental refresh, chunk
 ### Task 8: Seed script + `just setup`
 
 **Files:**
+
 - Create: `scripts/seed-cache.ts`
 
 **Interfaces:**
+
 - Consumes: `parseTasks` (Task 3); the legacy raw-pages `notion-cache.json` in the repo root (gitignored, 16.9 MB).
 - Produces: `/tmp/task-cache-seed.json` in `TaskCache` shape; `just setup` (written in Task 1) uploads it to local + remote R2.
 
@@ -983,17 +1089,19 @@ git add -A && git commit -m "feat(api): tasks stream, incremental refresh, chunk
 // shape and stage it for `wrangler r2 object put` (see `just setup`).
 // Run: bun scripts/seed-cache.ts   (bun resolves $lib via tsconfig paths;
 // run `bun run prepare` first so .svelte-kit/tsconfig.json exists)
-import { parseTasks } from "../src/lib/data/parser.ts";
-import type { NotionPage, TaskCache } from "../src/lib/types.ts";
+import { parseTasks } from '../src/lib/data/parser.ts';
+import type { NotionPage, TaskCache } from '../src/lib/types.ts';
 
-const raw = JSON.parse(await Bun.file("notion-cache.json").text());
+const raw = JSON.parse(await Bun.file('notion-cache.json').text());
 const pages: NotionPage[] = Array.isArray(raw) ? raw : raw.pages;
 const cache: TaskCache = {
-  lastFullRefreshAt: Array.isArray(raw) ? null : (raw.lastFullRefreshAt ?? null),
-  ...parseTasks(pages),
+	lastFullRefreshAt: Array.isArray(raw) ? null : (raw.lastFullRefreshAt ?? null),
+	...parseTasks(pages)
 };
-await Bun.write("/tmp/task-cache-seed.json", JSON.stringify(cache));
-console.log(`seeded ${cache.tasks.length} tasks from ${pages.length} pages -> /tmp/task-cache-seed.json`);
+await Bun.write('/tmp/task-cache-seed.json', JSON.stringify(cache));
+console.log(
+	`seeded ${cache.tasks.length} tasks from ${pages.length} pages -> /tmp/task-cache-seed.json`
+);
 ```
 
 - [ ] **Step 2: Run it and sanity-check the output**
@@ -1001,6 +1109,7 @@ console.log(`seeded ${cache.tasks.length} tasks from ${pages.length} pages -> /t
 ```bash
 bun run prepare && bun scripts/seed-cache.ts
 ```
+
 Expected: `seeded 4302 tasks from 4302 pages ...` (task count = page count now that base filters are gone; ±a few if Notion changed since). If `$lib` resolution fails under Bun, change the two imports in `parser.ts`'s dependency chain? **No** — instead change the seed script's imports to relative paths only (it already is) and replace `parser.ts`'s internal `$lib/types.js` import with `../types.js` (same for `history.ts`/`filters.ts` if needed); relative imports inside `src/lib` are equivalent and Bun-safe.
 
 - [ ] **Step 3: Seed local R2 only** (remote comes at deploy time)
@@ -1008,6 +1117,7 @@ Expected: `seeded 4302 tasks from 4302 pages ...` (task count = page count now t
 ```bash
 bunx wrangler r2 object put task-burndown-cache/task-cache.json --file /tmp/task-cache-seed.json --local
 ```
+
 Expected: object written under `.wrangler/state/`.
 
 - [ ] **Step 4: Commit**
@@ -1021,9 +1131,11 @@ git add scripts/seed-cache.ts && git commit -m "feat(scripts): seed R2 task cach
 ### Task 9: Client rework (+page.svelte)
 
 **Files:**
+
 - Modify: `src/routes/+page.svelte`
 
 **Interfaces:**
+
 - Consumes: `GET /api/tasks`, `POST /api/refresh`, `POST /api/refresh-chunk`, `PUT /api/cache` (Task 7 contract); `applyBaseFilters` (`$lib/data/filters.js`); `mergeParsedData` (`$lib/data/merge.js`); `TaskCache`/`ParsedData` types.
 - Produces: the page no longer receives server data; everything loads client-side.
 
@@ -1032,139 +1144,149 @@ git add scripts/seed-cache.ts && git commit -m "feat(scripts): seed R2 task cach
 In `src/routes/+page.svelte` `<script>`:
 
 1. Remove `const { data } = $props();` (and its `svelte-ignore` comment). Add imports:
+
 ```ts
-  import { applyBaseFilters } from "$lib/data/filters.js";
-  import { mergeParsedData } from "$lib/data/merge.js";
-  import type { ParsedData, TaskCache } from "$lib/types.js";
+import { applyBaseFilters } from '$lib/data/filters.js';
+import { mergeParsedData } from '$lib/data/merge.js';
+import type { ParsedData, TaskCache } from '$lib/types.js';
 ```
+
 (`applyViewFilters` is already imported from the same module — merge the import statements.)
 
 2. Replace the five data-seeded states with empty initials:
+
 ```ts
-  let allTasks: Task[] = $state([]);
-  let allTags: string[] = $state([]);
-  let allPriorities: string[] = $state(["High", "Medium", "Low", "(No Priority)"]);
-  let allProjects: string[] = $state(["(No Project)"]);
-  let tagColors: Record<string, string> = $state({});
+let allTasks: Task[] = $state([]);
+let allTags: string[] = $state([]);
+let allPriorities: string[] = $state(['High', 'Medium', 'Low', '(No Priority)']);
+let allProjects: string[] = $state(['(No Project)']);
+let tagColors: Record<string, string> = $state({});
 ```
 
 3. Base filters now run client-side. Below the state block add:
+
 ```ts
-  let baseTasks = $derived(applyBaseFilters(allTasks));
+let baseTasks = $derived(applyBaseFilters(allTasks));
 ```
+
 and change the two consumers of raw `allTasks`:
+
 ```ts
-  let filteredTasks = $derived(
-    applyViewFilters(baseTasks, {
-      includeLegacy: false,
-      includeIncomplete: true,
-      includeProjectTasks,
-    }),
-  );
-  let projectCount = $derived(baseTasks.filter((t) => t.hasProject).length);
+let filteredTasks = $derived(
+	applyViewFilters(baseTasks, {
+		includeLegacy: false,
+		includeIncomplete: true,
+		includeProjectTasks
+	})
+);
+let projectCount = $derived(baseTasks.filter((t) => t.hasProject).length);
 ```
+
 Also update the two template usages: `{#if allTasks.length === 0}` → `{#if baseTasks.length === 0}` and the `{:else if allTasks.length > 0}` header check → `baseTasks.length > 0` (and the stats `{#if allTasks.length > 0}` likewise).
 
 4. Replace `postRefresh`/`fullSync`/`refreshToday` wholesale with:
+
 ```ts
-  let syncProgress: number = $state(0);
+let syncProgress: number = $state(0);
 
-  function applyParsed(d: ParsedData) {
-    allTasks = d.tasks;
-    allTags = d.allTags;
-    allPriorities = d.allPriorities;
-    allProjects = d.allProjects;
-    tagColors = d.tagColors;
-  }
+function applyParsed(d: ParsedData) {
+	allTasks = d.tasks;
+	allTags = d.allTags;
+	allPriorities = d.allPriorities;
+	allProjects = d.allProjects;
+	tagColors = d.tagColors;
+}
 
-  async function loadTasks() {
-    refreshError = null;
-    try {
-      const res = await fetch("/api/tasks");
-      if (!res.ok) {
-        refreshError = `${res.status}`;
-        return;
-      }
-      applyParsed((await res.json()) as TaskCache);
-    } catch (e) {
-      refreshError = (e as Error).message;
-    }
-  }
+async function loadTasks() {
+	refreshError = null;
+	try {
+		const res = await fetch('/api/tasks');
+		if (!res.ok) {
+			refreshError = `${res.status}`;
+			return;
+		}
+		applyParsed((await res.json()) as TaskCache);
+	} catch (e) {
+		refreshError = (e as Error).message;
+	}
+}
 
-  async function fullSync() {
-    isFullSyncing = true;
-    refreshError = null;
-    syncProgress = 0;
-    try {
-      let merged: ParsedData | null = null;
-      let cursor: string | null = null;
-      do {
-        const qs: string = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
-        const res = await fetch(`/api/refresh-chunk${qs}`, { method: "POST" });
-        if (!res.ok) {
-          refreshError = `${res.status}`;
-          return;
-        }
-        const { nextCursor, ...chunk } = (await res.json()) as ParsedData & {
-          nextCursor: string | null;
-        };
-        merged = merged ? mergeParsedData(merged, chunk) : chunk;
-        cursor = nextCursor;
-        syncProgress += 1;
-      } while (cursor);
-      const cacheData: TaskCache = {
-        lastFullRefreshAt: new Date().toISOString(),
-        ...merged!,
-      };
-      const put = await fetch("/api/cache", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cacheData),
-      });
-      if (!put.ok) {
-        refreshError = `${put.status}`;
-        return;
-      }
-      applyParsed(cacheData);
-    } catch (e) {
-      refreshError = (e as Error).message;
-    } finally {
-      isFullSyncing = false;
-    }
-  }
+async function fullSync() {
+	isFullSyncing = true;
+	refreshError = null;
+	syncProgress = 0;
+	try {
+		let merged: ParsedData | null = null;
+		let cursor: string | null = null;
+		do {
+			const qs: string = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
+			const res = await fetch(`/api/refresh-chunk${qs}`, { method: 'POST' });
+			if (!res.ok) {
+				refreshError = `${res.status}`;
+				return;
+			}
+			const { nextCursor, ...chunk } = (await res.json()) as ParsedData & {
+				nextCursor: string | null;
+			};
+			merged = merged ? mergeParsedData(merged, chunk) : chunk;
+			cursor = nextCursor;
+			syncProgress += 1;
+		} while (cursor);
+		const cacheData: TaskCache = {
+			lastFullRefreshAt: new Date().toISOString(),
+			...merged!
+		};
+		const put = await fetch('/api/cache', {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(cacheData)
+		});
+		if (!put.ok) {
+			refreshError = `${put.status}`;
+			return;
+		}
+		applyParsed(cacheData);
+	} catch (e) {
+		refreshError = (e as Error).message;
+	} finally {
+		isFullSyncing = false;
+	}
+}
 
-  async function refreshToday() {
-    isRefreshingToday = true;
-    refreshError = null;
-    try {
-      const since = encodeURIComponent(getStartOfDayUTC(timezone));
-      const res = await fetch(`/api/refresh?since=${since}`, { method: "POST" });
-      if (!res.ok) {
-        refreshError = `${res.status}`;
-        return;
-      }
-      const meta = (await res.json()) as { needsFull: boolean };
-      if (meta.needsFull) {
-        await fullSync(); // empty/stale cache bootstraps itself via the chunk loop
-      } else {
-        await loadTasks();
-      }
-    } catch (e) {
-      refreshError = (e as Error).message;
-    } finally {
-      isRefreshingToday = false;
-    }
-  }
+async function refreshToday() {
+	isRefreshingToday = true;
+	refreshError = null;
+	try {
+		const since = encodeURIComponent(getStartOfDayUTC(timezone));
+		const res = await fetch(`/api/refresh?since=${since}`, { method: 'POST' });
+		if (!res.ok) {
+			refreshError = `${res.status}`;
+			return;
+		}
+		const meta = (await res.json()) as { needsFull: boolean };
+		if (meta.needsFull) {
+			await fullSync(); // empty/stale cache bootstraps itself via the chunk loop
+		} else {
+			await loadTasks();
+		}
+	} catch (e) {
+		refreshError = (e as Error).message;
+	} finally {
+		isRefreshingToday = false;
+	}
+}
 ```
 
 5. In `onMount`, before `await refreshToday();` add:
+
 ```ts
-    await loadTasks(); // paint from R2 cache immediately, then sync today
+await loadTasks(); // paint from R2 cache immediately, then sync today
 ```
 
 6. Full Sync button label — show loop progress. Replace its `<span>` text `{isFullSyncing ? "Syncing" : "Full"}` with:
+
 ```svelte
-            {isFullSyncing ? `Sync ${syncProgress}` : "Full"}
+{isFullSyncing ? `Sync ${syncProgress}` : 'Full'}
 ```
 
 - [ ] **Step 2: Static analysis**
@@ -1172,6 +1294,7 @@ Also update the two template usages: `{#if allTasks.length === 0}` → `{#if bas
 ```bash
 bun run check
 ```
+
 Expected: PASS, 0 errors (this was the last `data`-typed consumer).
 
 - [ ] **Step 3: Manual dev smoke against seeded local R2**
@@ -1179,7 +1302,9 @@ Expected: PASS, 0 errors (this was the last `data`-typed consumer).
 ```bash
 just dev
 ```
+
 In the browser at `http://localhost:5173`:
+
 - Chart renders immediately from the seeded cache (~3.7k filtered tasks; stats populated).
 - "Today" button completes and the "Syncing" indicator clears (requires `op` signed in — the dev recipe injects `NOTION_API_KEY`).
 - "Full" button counts up `Sync 1…15` and lands with a rendered chart; a second page reload still shows data (PUT persisted to local R2).
@@ -1197,35 +1322,37 @@ git add -A && git commit -m "feat(client): load from /api/tasks, client-side bas
 ### Task 10: PWA — manifest, icons, head links
 
 **Files:**
+
 - Create: `scripts/generate-icons.ts`, `static/manifest.webmanifest`, `static/icon-192.png`, `static/icon-512.png`, `static/apple-touch-icon.png`, `static/favicon.svg`
 - Modify: `src/app.html`
 
 **Interfaces:**
+
 - Consumes: the heroicons clone at `~/Desktop/coding/reference-repos/heroicons/optimized/24/solid/chart-bar.svg`; color tokens from `src/app.css` (look up the actual values of `--color-void` — the page background — and `--color-bitcoin`; the literals below assume `#0a0a0c` / `#f7931a`, substitute the real ones).
 
 - [ ] **Step 1: Write `scripts/generate-icons.ts`**
 
 ```ts
 // One-off: render the homescreen/app icons. Run: bun scripts/generate-icons.ts
-import { Resvg } from "@resvg/resvg-js";
-import { readFileSync, writeFileSync } from "node:fs";
+import { Resvg } from '@resvg/resvg-js';
+import { readFileSync, writeFileSync } from 'node:fs';
 
-const BG = "#0a0a0c"; // --color-void from src/app.css — keep in sync
-const FG = "#f7931a"; // --color-bitcoin
+const BG = '#0a0a0c'; // --color-void from src/app.css — keep in sync
+const FG = '#f7931a'; // --color-bitcoin
 
 const heroicon = readFileSync(
-  `${process.env.HOME}/Desktop/coding/reference-repos/heroicons/optimized/24/solid/chart-bar.svg`,
-  "utf8",
+	`${process.env.HOME}/Desktop/coding/reference-repos/heroicons/optimized/24/solid/chart-bar.svg`,
+	'utf8'
 );
 const path = heroicon.match(/<path[^>]*d="([^"]+)"/)![1];
 
 // Full-bleed square: iOS masks its own corners on apple-touch-icon.
 // Glyph occupies the middle ~55% of the canvas.
 function iconSvg(size: number): string {
-  const glyph = size * 0.55;
-  const offset = (size - glyph) / 2;
-  const scale = glyph / 24;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+	const glyph = size * 0.55;
+	const offset = (size - glyph) / 2;
+	const scale = glyph / 24;
+	return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
   <rect width="${size}" height="${size}" fill="${BG}"/>
   <g transform="translate(${offset} ${offset}) scale(${scale})">
     <path d="${path}" fill="${FG}"/>
@@ -1234,20 +1361,20 @@ function iconSvg(size: number): string {
 }
 
 for (const [file, size] of [
-  ["static/icon-192.png", 192],
-  ["static/icon-512.png", 512],
-  ["static/apple-touch-icon.png", 180],
+	['static/icon-192.png', 192],
+	['static/icon-512.png', 512],
+	['static/apple-touch-icon.png', 180]
 ] as const) {
-  writeFileSync(file, new Resvg(iconSvg(size)).render().asPng());
-  console.log(`wrote ${file}`);
+	writeFileSync(file, new Resvg(iconSvg(size)).render().asPng());
+	console.log(`wrote ${file}`);
 }
 
 // Browser-tab favicon: transparent background, just the glyph.
 writeFileSync(
-  "static/favicon.svg",
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="${path}" fill="${FG}"/></svg>`,
+	'static/favicon.svg',
+	`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="${path}" fill="${FG}"/></svg>`
 );
-console.log("wrote static/favicon.svg");
+console.log('wrote static/favicon.svg');
 ```
 
 - [ ] **Step 2: Check the real token values, then generate**
@@ -1256,34 +1383,35 @@ console.log("wrote static/favicon.svg");
 grep -n "color-void\|color-bitcoin" src/app.css   # update BG/FG constants to match
 bun scripts/generate-icons.ts
 ```
+
 Expected: four `wrote static/...` lines. Eyeball `static/icon-512.png` (open it) — orange chart-bar on near-black.
 
 - [ ] **Step 3: Write `static/manifest.webmanifest`** (background/theme = the real `--color-void`)
 
 ```json
 {
-  "name": "Task Burndown",
-  "short_name": "Burndown",
-  "display": "standalone",
-  "start_url": "/",
-  "background_color": "#0a0a0c",
-  "theme_color": "#0a0a0c",
-  "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
-  ]
+	"name": "Task Burndown",
+	"short_name": "Burndown",
+	"display": "standalone",
+	"start_url": "/",
+	"background_color": "#0a0a0c",
+	"theme_color": "#0a0a0c",
+	"icons": [
+		{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+		{ "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+	]
 }
 ```
 
 - [ ] **Step 4: Add head links in `src/app.html`** — insert directly above `%sveltekit.head%`:
 
 ```html
-    <!-- use-credentials: manifest fetches are credentialless by default and
+<!-- use-credentials: manifest fetches are credentialless by default and
          CF Access would bounce them to the login page -->
-    <link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <meta name="theme-color" content="#0a0a0c" />
+<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<meta name="theme-color" content="#0a0a0c" />
 ```
 
 - [ ] **Step 5: Verify in dev**
@@ -1291,6 +1419,7 @@ Expected: four `wrote static/...` lines. Eyeball `static/icon-512.png` (open it)
 ```bash
 just dev
 ```
+
 `curl -s http://localhost:5173/manifest.webmanifest | head -3` returns the JSON; the tab shows the favicon.
 
 - [ ] **Step 6: Commit**
@@ -1304,9 +1433,11 @@ git add -A && git commit -m "feat(pwa): manifest, generated chart-bar icons, hea
 ### Task 11: Rewrite CLAUDE.md and README
 
 **Files:**
+
 - Rewrite: `CLAUDE.md`, `README.md`
 
 **Interfaces:**
+
 - Consumes: final state of Tasks 1–10.
 
 - [ ] **Step 1: Rewrite `CLAUDE.md`** to describe the new reality. Keep the accurate sections (Architecture's data-processing modules, Key Concepts, Code Conventions) and replace everything stale:
