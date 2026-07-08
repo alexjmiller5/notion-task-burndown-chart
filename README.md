@@ -58,6 +58,18 @@ Workers dashboard → `task-burndown` → Settings → Domains & Routes → work
 
 Then: Zero Trust → Access → Applications → the auto-created app → set **Session Duration = 1 month** and confirm the policy uses the Cloudflare identity provider restricted to Alex's account.
 
+Finally, add a second Access application ("public PWA assets") with a **Bypass / Everyone** policy covering exactly these paths — iOS fetches the homescreen icon and browsers fetch the manifest **without cookies**, so without this the icon falls back to a letter monogram:
+
+```
+task-burndown.amiller06880.workers.dev/apple-touch-icon.png
+task-burndown.amiller06880.workers.dev/icon-192.png
+task-burndown.amiller06880.workers.dev/icon-512.png
+task-burndown.amiller06880.workers.dev/favicon.svg
+task-burndown.amiller06880.workers.dev/manifest.webmanifest
+```
+
+(These are three chart PNGs and an app name — nothing sensitive. Everything else stays behind Access.)
+
 ### 2. 1Password vault + service account
 
 Run these (note: zsh may require quoting vault names with spaces):
