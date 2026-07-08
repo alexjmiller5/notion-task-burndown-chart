@@ -14,6 +14,8 @@ export const POST: RequestHandler = async ({ url, platform }) => {
 	const hasCache = cache.tasks.length > 0;
 
 	// Full syncs are the client's job (chunked loop) — this endpoint only says so.
+	// The 24h staleness branch is deliberately dormant with the current UI: the
+	// client always sends ?since=, so it only fires for plain no-param callers.
 	const needsFull =
 		!hasCache ||
 		(sinceParam === null &&
