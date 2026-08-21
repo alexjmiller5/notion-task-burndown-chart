@@ -26,8 +26,9 @@ export const MARKERS: ChartMarker[] = [
 	{ date: '2026-05-19', label: 'Post-whirlwind purge', direction: 'down' },
 	{ date: '2026-06-22', label: 'Post-Greece brain dump', direction: 'up' },
 	{ date: '2026-06-29', label: 'Post-Greece', direction: 'down' },
-	{ date: '2026-07-18', label: 'Old-backlog sweep', direction: 'down' },
+	// Productivity blips, not life events — kept for reference:
+	// { date: '2026-07-18', label: 'Old-backlog sweep', direction: 'down' },
 	{ date: '2026-07-27', label: 'Kun Chen rabbit hole', direction: 'up' },
-	{ date: '2026-08-02', label: 'Moving-out triage', direction: 'down' },
+	// { date: '2026-08-02', label: 'Moving-out triage', direction: 'down' },
 	{ date: '2026-08-10', label: 'Shortcuts project triage', direction: 'down' }
 ];
