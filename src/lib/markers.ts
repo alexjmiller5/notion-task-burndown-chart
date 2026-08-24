@@ -24,6 +24,7 @@ export const MARKERS: ChartMarker[] = [
 	{ date: '2026-02-26', label: 'Project tasks reconciliation', direction: 'up' },
 	{ date: '2026-03-30', label: 'Post-Colombia', direction: 'down' },
 	{ date: '2026-05-19', label: 'Post-whirlwind purge', direction: 'down' },
+	{ date: '2026-05-20', label: 'MySupplementals tasks', direction: 'up' },
 	{ date: '2026-06-22', label: 'Post-Greece brain dump', direction: 'up' },
 	{ date: '2026-06-29', label: 'Post-Greece', direction: 'down' },
 	// Productivity blips, not life events — kept for reference:
