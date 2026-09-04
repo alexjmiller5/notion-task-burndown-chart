@@ -32,7 +32,8 @@ export const MARKERS: ChartMarker[] = [
 	// { date: '2026-07-18', label: 'Old-backlog sweep', direction: 'down' },
 	{ date: '2026-07-27', label: 'Kun Chen rabbit hole', direction: 'up' },
 	// { date: '2026-08-02', label: 'Moving-out triage', direction: 'down' },
-	{ date: '2026-08-10', label: 'Shortcuts project triage', direction: 'down' }
+	{ date: '2026-08-10', label: 'Shortcuts project triage', direction: 'down' },
+	{ date: '2026-09-04', label: 'life-ui project created (47 tasks)', direction: 'up' }
 ];
 
 /** Marker labels live in horizontal lanes in the headroom above the bars. */
